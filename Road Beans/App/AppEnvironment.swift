@@ -8,7 +8,6 @@ protocol PhotoRepository: Sendable {}
 protocol TombstoneRepository: Sendable {}
 protocol LocationSearchService: Sendable {}
 protocol LocationPermissionService: Sendable {}
-protocol PhotoProcessingService: Sendable {}
 #endif
 
 // MARK: - Environment Keys
