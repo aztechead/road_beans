@@ -1,3 +1,10 @@
 .DS_Store
+
+# Xcode user-local state
 *.xcuserstate
 xcuserdata/
+
+# Build products and result bundles
+DerivedData/
+build/
+*.xcresult
