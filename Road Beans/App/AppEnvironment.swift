@@ -3,7 +3,6 @@ import SwiftUI
 // MARK: - Stub protocol forward declarations
 // Replace each stub with its real protocol as the corresponding task lands.
 #if STUB_REPOSITORY_PROTOCOLS_NOT_YET_DEFINED
-protocol PlaceRepository: Sendable {}
 protocol VisitRepository: Sendable {}
 protocol PhotoRepository: Sendable {}
 protocol TombstoneRepository: Sendable {}
