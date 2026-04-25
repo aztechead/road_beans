@@ -10,7 +10,7 @@
     {
       "id": 1,
       "subject": "Task 1: Domain enums (PlaceKind, PlaceSource, DrinkCategory, SyncState)",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [0],
       "description": "**Goal:** Define the four domain enums with display metadata.\n\n```json:metadata\n{\"files\":[\"Road Beans/Models/PlaceKind.swift\",\"Road Beans/Models/PlaceSource.swift\",\"Road Beans/Models/DrinkCategory.swift\",\"Road Beans/Models/SyncState.swift\",\"Road BeansTests/RepositoryTests/EnumTests.swift\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' test -only-testing:\\\"Road BeansTests/EnumTests\\\"\",\"acceptanceCriteria\":[\"Four enums defined with display metadata\",\"All conform to String/Codable/CaseIterable/Sendable\",\"RawValue stability tests pass\"]}\n```"
     },
@@ -218,5 +218,5 @@
       "description": "**Goal:** Final pass. Dynamic Type, dark mode, sign-out/sign-in iCloud QA, document checklist for future TestFlight builds.\n\n```json:metadata\n{\"files\":[\"docs/superpowers/qa/2026-04-25-manual-qa-checklist.md\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' build test\",\"acceptanceCriteria\":[\"Smoke flow passes\",\"Dark mode + Dynamic Type ok\",\"Haptics + Reduce Motion gates\",\"iCloud sign-out/sign-in flows\",\"QA checklist documented\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-04-25T22:07:00Z"
+  "lastUpdated": "2026-04-25T22:10:00Z"
 }
