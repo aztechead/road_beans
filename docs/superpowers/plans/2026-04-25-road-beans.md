@@ -19,7 +19,7 @@
 - **Commits**: each task ends with a `git commit` step. Commit message format: `feat:`, `fix:`, `chore:`, `test:`, `refactor:`. Co-author trailer is optional.
 - **Verify** commands run `xcodebuild` against the `Road Beans.xcodeproj` at repo root. The destination is a generic iOS 26.4 simulator. Adjust the `-destination` if your local simulator name differs.
 - **Build sanity** for non-test tasks: `xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'generic/platform=iOS Simulator' build`. A successful build is the acceptance signal.
-- **Test runs** for tasks that add tests: `xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'platform=iOS Simulator,name=iPhone 16' test -only-testing:"Road BeansTests/<TestFileName>"`.
+- **Test runs** for tasks that add tests: `xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'platform=iOS Simulator,name=iPhone 17' test -only-testing:"Road BeansTests/<TestFileName>"`.
 - **DI pattern**: every service/repository has a protocol in `Repositories/Protocols/` or `Services/`; concrete implementations in `Repositories/Local/` or `Services/`. Both register through `AppEnvironment` EnvironmentKeys.
 
 ---
@@ -58,7 +58,7 @@
 - [ ] `xcodebuild ... build` succeeds.
 - [ ] `xcodebuild ... test -only-testing:"Road BeansTests/SmokeTests"` passes.
 
-**Verify:** `xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'platform=iOS Simulator,name=iPhone 16' build test -only-testing:"Road BeansTests/SmokeTests"` → BUILD SUCCEEDED, 1 test passed.
+**Verify:** `xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'platform=iOS Simulator,name=iPhone 17' build test -only-testing:"Road BeansTests/SmokeTests"` → BUILD SUCCEEDED, 1 test passed.
 
 **Steps:**
 
@@ -117,8 +117,8 @@ mkdir -p App/Persistence Models ReadModels Commands DTOs \
   Repositories/Protocols Repositories/Local Services \
   Features/PlaceList Features/PlaceDetail Features/VisitDetail Features/AddVisit Features/Map \
   DesignSystem/BeanSlider
-# Place a .gitkeep so empty dirs commit
-find . -type d -empty -exec touch {}/.gitkeep \;
+# Do not add .gitkeep files: file-system-synchronized Xcode groups copy
+# dotfiles as resources, which creates duplicate bundle outputs.
 ```
 
 - [ ] **Step 5: Add the test target**
@@ -130,7 +130,8 @@ Add a `Road BeansTests` unit-test bundle target to `Road Beans.xcodeproj/project
 ```bash
 cd "Road BeansTests"
 mkdir -p RepositoryTests ViewModelTests ServiceTests DTOTests DesignSystemTests
-find . -type d -empty -exec touch {}/.gitkeep \;
+# Do not add .gitkeep files: these directories are scaffold-only until
+# later tasks add source files.
 ```
 
 - [ ] **Step 7: Add the smoke test**
@@ -152,7 +153,7 @@ struct SmokeTests {
 
 ```bash
 xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
   build test -only-testing:"Road BeansTests/SmokeTests"
 ```
 
@@ -240,7 +241,7 @@ struct EnumTests {
 
 ```bash
 xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
   test -only-testing:"Road BeansTests/EnumTests"
 ```
 
@@ -4092,7 +4093,7 @@ struct Road_BeansApp: App {
 
 ```bash
 xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" \
-  -destination 'platform=iOS Simulator,name=iPhone 16' build
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
 ```
 
 Manual: open the project in Xcode, run on iPhone 16 simulator. Verify the 3-tab TabView appears, tapping `+` opens the placeholder Add sheet, Cancel dismisses.
@@ -6011,7 +6012,7 @@ Open the simulator, perform every step, fix anything that fails. Commit polish p
 
 ```bash
 xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
   build test
 ```
 

@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		416D5A772F9D7000001C2F11 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 416D5A482F9D60D3001C2F11 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 416D5A4F2F9D60D3001C2F11;
+			remoteInfo = "Road Beans";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		416D5A502F9D60D3001C2F11 /* Road Beans.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Road Beans.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		416D5A702F9D7000001C2F11 /* Road BeansTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Road BeansTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,10 +40,22 @@
 			path = "Road Beans";
 			sourceTree = "<group>";
 		};
+		416D5A712F9D7000001C2F11 /* Road BeansTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Road BeansTests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		416D5A4D2F9D60D3001C2F11 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		416D5A722F9D7000001C2F11 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -46,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				416D5A522F9D60D3001C2F11 /* Road Beans */,
+				416D5A712F9D7000001C2F11 /* Road BeansTests */,
 				416D5A512F9D60D3001C2F11 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				416D5A502F9D60D3001C2F11 /* Road Beans.app */,
+				416D5A702F9D7000001C2F11 /* Road BeansTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -83,6 +108,29 @@
 			productReference = 416D5A502F9D60D3001C2F11 /* Road Beans.app */;
 			productType = "com.apple.product-type.application";
 		};
+		416D5A732F9D7000001C2F11 /* Road BeansTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 416D5A782F9D7000001C2F11 /* Build configuration list for PBXNativeTarget "Road BeansTests" */;
+			buildPhases = (
+				416D5A742F9D7000001C2F11 /* Sources */,
+				416D5A722F9D7000001C2F11 /* Frameworks */,
+				416D5A752F9D7000001C2F11 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				416D5A762F9D7000001C2F11 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				416D5A712F9D7000001C2F11 /* Road BeansTests */,
+			);
+			name = "Road BeansTests";
+			packageProductDependencies = (
+			);
+			productName = "Road BeansTests";
+			productReference = 416D5A702F9D7000001C2F11 /* Road BeansTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -95,6 +143,10 @@
 				TargetAttributes = {
 					416D5A4F2F9D60D3001C2F11 = {
 						CreatedOnToolsVersion = 26.4.1;
+					};
+					416D5A732F9D7000001C2F11 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 416D5A4F2F9D60D3001C2F11;
 					};
 				};
 			};
@@ -113,12 +165,20 @@
 			projectRoot = "";
 			targets = (
 				416D5A4F2F9D60D3001C2F11 /* Road Beans */,
+				416D5A732F9D7000001C2F11 /* Road BeansTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		416D5A4E2F9D60D3001C2F11 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		416D5A752F9D7000001C2F11 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +195,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		416D5A742F9D7000001C2F11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		416D5A762F9D7000001C2F11 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 416D5A4F2F9D60D3001C2F11 /* Road Beans */;
+			targetProxy = 416D5A772F9D7000001C2F11 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		416D5A5F2F9D60D5001C2F11 /* Debug */ = {
@@ -327,6 +402,64 @@
 			};
 			name = Release;
 		};
+		416D5A792F9D7000001C2F11 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FVKNZ2X7VK;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "brainmeld.Road-BeansTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Road Beans.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Road Beans";
+				TEST_TARGET_NAME = "Road Beans";
+			};
+			name = Debug;
+		};
+		416D5A7A2F9D7000001C2F11 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FVKNZ2X7VK;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "brainmeld.Road-BeansTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Road Beans.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Road Beans";
+				TEST_TARGET_NAME = "Road Beans";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -344,6 +477,15 @@
 			buildConfigurations = (
 				416D5A5F2F9D60D5001C2F11 /* Debug */,
 				416D5A602F9D60D5001C2F11 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		416D5A782F9D7000001C2F11 /* Build configuration list for PBXNativeTarget "Road BeansTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				416D5A792F9D7000001C2F11 /* Debug */,
+				416D5A7A2F9D7000001C2F11 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
