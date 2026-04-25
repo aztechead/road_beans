@@ -5,7 +5,6 @@ import SwiftUI
 #if STUB_REPOSITORY_PROTOCOLS_NOT_YET_DEFINED
 protocol PlaceRepository: Sendable {}
 protocol VisitRepository: Sendable {}
-protocol TagRepository: Sendable {}
 protocol PhotoRepository: Sendable {}
 protocol TombstoneRepository: Sendable {}
 protocol LocationSearchService: Sendable {}
