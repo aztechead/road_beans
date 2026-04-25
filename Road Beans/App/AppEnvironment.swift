@@ -11,7 +11,6 @@ protocol TombstoneRepository: Sendable {}
 protocol LocationSearchService: Sendable {}
 protocol LocationPermissionService: Sendable {}
 protocol PhotoProcessingService: Sendable {}
-protocol RemoteSyncCoordinator: Sendable {}
 #endif
 
 // MARK: - Environment Keys

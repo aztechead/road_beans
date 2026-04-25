@@ -83,7 +83,7 @@
     {
       "id": 9,
       "subject": "Task 9: RemoteSyncCoordinator + LocalOnlyRemoteSync",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         8
       ],
@@ -302,5 +302,5 @@
       "description": "**Goal:** Final pass. Dynamic Type, dark mode, sign-out/sign-in iCloud QA, document checklist for future TestFlight builds.\n\n```json:metadata\n{\"files\":[\"docs/superpowers/qa/2026-04-25-manual-qa-checklist.md\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' build test\",\"acceptanceCriteria\":[\"Smoke flow passes\",\"Dark mode + Dynamic Type ok\",\"Haptics + Reduce Motion gates\",\"iCloud sign-out/sign-in flows\",\"QA checklist documented\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-04-25T22:26:41Z"
+  "lastUpdated": "2026-04-25T22:28:09Z"
 }
