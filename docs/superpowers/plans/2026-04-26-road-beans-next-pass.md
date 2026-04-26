@@ -344,6 +344,8 @@ xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'pl
 
 ## Task 12: Update Manual QA and Release Readiness Docs
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Make the repo clear for the next developer or agent.
 
 **Files:**

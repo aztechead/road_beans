@@ -3,7 +3,8 @@
 Run before each TestFlight build.
 
 ## Smoke
-- [ ] Launch app cold; no crash; tab bar shows List, Map, +.
+- [ ] Fresh install: launch app cold; onboarding appears and completes without crash.
+- [ ] Relaunch after onboarding; tab bar shows List, Map, Backup, +.
 - [ ] Tap +; full-screen sheet presents the Place page.
 - [ ] Add a custom place named "Test Stop" with kind Other.
 - [ ] Page 2: leave date as-is; optionally add photos; add visit tag "qa".
@@ -11,6 +12,8 @@ Run before each TestFlight build.
 - [ ] Save; toast "Added to Test Stop." appears.
 - [ ] List shows the new place; tap it; Place Detail shows the visit.
 - [ ] Open Visit Detail; drink, rating, tags, and any selected photos appear.
+- [ ] Place Detail toolbar Edit: change name/kind/address; List and Map reflect the update.
+- [ ] Visit Detail toolbar Edit: change date, tags, drink name, drink rating, and photos; Recent Visits reflects the update.
 - [ ] Visit Detail toolbar Trash -> Delete; list/detail/map refresh after deletion.
 
 ## Bean Slider
@@ -42,9 +45,19 @@ Run before each TestFlight build.
 
 ## Search
 - [ ] In List, search by place name.
+- [ ] Search by place address.
 - [ ] Search by visit tag.
 - [ ] Search by drink name in Recent Visits mode.
+- [ ] Combine kind, rating, tag, and date filters; results narrow correctly.
+- [ ] Tap Clear; filters reset without losing selected List mode or search text.
+
+## Backup Export
+- [ ] Open Backup tab.
+- [ ] Tap Prepare Export; no crash and Share Export File appears.
+- [ ] Share/save the JSON file.
+- [ ] Inspect JSON: `schemaVersion`, `places`, `visits`, `drinks`, `tags`, and `photoMetadata` keys are present.
 
 ## Known V1 Limits
 - [ ] Near-me requires Location Services permission and an available device/simulator location fix.
 - [ ] iCloud data migration copy is not implemented; prompt flow is present for manual QA.
+- [ ] Backup export includes photo metadata only; raw photo binaries are not exported yet.
