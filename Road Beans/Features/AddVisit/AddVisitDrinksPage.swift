@@ -36,12 +36,7 @@ private struct DrinkDraftRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Picker("Category", selection: $drink.category) {
-                ForEach(DrinkCategory.allCases, id: \.self) { category in
-                    Text(category.displayName).tag(category)
-                }
-            }
-            .pickerStyle(.segmented)
+            DrinkCategoryPicker(selection: $drink.category)
 
             TextField("Drink name", text: $drink.name)
                 .textFieldStyle(.roundedBorder)

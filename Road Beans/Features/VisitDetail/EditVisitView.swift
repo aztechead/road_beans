@@ -112,11 +112,7 @@ struct EditVisitView: View {
         VStack(alignment: .leading, spacing: 12) {
             TextField("Drink name", text: $drinks[index].name)
 
-            Picker("Category", selection: $drinks[index].category) {
-                ForEach(DrinkCategory.allCases, id: \.self) { category in
-                    Text(category.displayName).tag(category)
-                }
-            }
+            DrinkCategoryPicker(selection: $drinks[index].category)
 
             TextField(
                 "Tags",
