@@ -54,7 +54,6 @@ struct Road_BeansApp: App {
         WindowGroup {
             ContentView()
                 .environment(persistence)
-                .environment(\.persistenceController, persistence)
                 .modelContainer(persistence.container)
                 .environment(\.placeRepository, placeRepository)
                 .environment(\.visitRepository, visitRepository)

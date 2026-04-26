@@ -12,6 +12,14 @@ struct RecentVisitRow: Sendable {
     let visit: VisitRow
     let placeName: String
     let placeKind: PlaceKind
+    let drinkNames: [String]
+
+    init(visit: VisitRow, placeName: String, placeKind: PlaceKind, drinkNames: [String] = []) {
+        self.visit = visit
+        self.placeName = placeName
+        self.placeKind = placeKind
+        self.drinkNames = drinkNames
+    }
 }
 
 protocol VisitRepository: Sendable {

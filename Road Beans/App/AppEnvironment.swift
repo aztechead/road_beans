@@ -1,37 +1,43 @@
+import CoreLocation
+import Foundation
 import SwiftUI
+
+private enum MissingEnvironmentDependencyError: Error {
+    case missing(String)
+}
 
 // MARK: - Environment Keys
 
 private struct PlaceRepositoryKey: EnvironmentKey {
-    static var defaultValue: any PlaceRepository { fatalError("PlaceRepository must be injected") }
+    static let defaultValue: any PlaceRepository = MissingPlaceRepository()
 }
 
 private struct VisitRepositoryKey: EnvironmentKey {
-    static var defaultValue: any VisitRepository { fatalError("VisitRepository must be injected") }
+    static let defaultValue: any VisitRepository = MissingVisitRepository()
 }
 
 private struct TagRepositoryKey: EnvironmentKey {
-    static var defaultValue: any TagRepository { fatalError("TagRepository must be injected") }
+    static let defaultValue: any TagRepository = MissingTagRepository()
 }
 
 private struct PhotoRepositoryKey: EnvironmentKey {
-    static var defaultValue: any PhotoRepository { fatalError("PhotoRepository must be injected") }
+    static let defaultValue: any PhotoRepository = MissingPhotoRepository()
 }
 
 private struct TombstoneRepositoryKey: EnvironmentKey {
-    static var defaultValue: any TombstoneRepository { fatalError("TombstoneRepository must be injected") }
+    static let defaultValue: any TombstoneRepository = MissingTombstoneRepository()
 }
 
 private struct LocationSearchServiceKey: EnvironmentKey {
-    static var defaultValue: any LocationSearchService { fatalError("LocationSearchService must be injected") }
+    static let defaultValue: any LocationSearchService = MissingLocationSearchService()
 }
 
 private struct LocationPermissionServiceKey: EnvironmentKey {
-    static var defaultValue: any LocationPermissionService { fatalError("LocationPermissionService must be injected") }
+    static let defaultValue: any LocationPermissionService = MissingLocationPermissionService()
 }
 
 private struct PhotoProcessingServiceKey: EnvironmentKey {
-    static var defaultValue: any PhotoProcessingService { fatalError("PhotoProcessingService must be injected") }
+    static let defaultValue: any PhotoProcessingService = MissingPhotoProcessingService()
 }
 
 private struct ICloudAvailabilityServiceKey: EnvironmentKey {
@@ -39,11 +45,7 @@ private struct ICloudAvailabilityServiceKey: EnvironmentKey {
 }
 
 private struct RemoteSyncCoordinatorKey: EnvironmentKey {
-    static var defaultValue: any RemoteSyncCoordinator { fatalError("RemoteSyncCoordinator must be injected") }
-}
-
-private struct PersistenceControllerKey: EnvironmentKey {
-    static var defaultValue: PersistenceController { fatalError("PersistenceController must be injected") }
+    static let defaultValue: any RemoteSyncCoordinator = NoopRemoteSyncCoordinator()
 }
 
 extension EnvironmentValues {
@@ -96,9 +98,106 @@ extension EnvironmentValues {
         get { self[RemoteSyncCoordinatorKey.self] }
         set { self[RemoteSyncCoordinatorKey.self] = newValue }
     }
+}
 
-    var persistenceController: PersistenceController {
-        get { self[PersistenceControllerKey.self] }
-        set { self[PersistenceControllerKey.self] = newValue }
+private struct MissingPlaceRepository: PlaceRepository {
+    func findOrCreate(reference: PlaceReference) async throws -> UUID {
+        throw MissingEnvironmentDependencyError.missing("PlaceRepository")
     }
+
+    func summaries() async throws -> [PlaceSummary] {
+        throw MissingEnvironmentDependencyError.missing("PlaceRepository")
+    }
+
+    func summariesNear(coordinate: CLLocationCoordinate2D, radiusMeters: Double) async throws -> [PlaceSummary] {
+        throw MissingEnvironmentDependencyError.missing("PlaceRepository")
+    }
+
+    func detail(id: UUID) async throws -> PlaceDetail? {
+        throw MissingEnvironmentDependencyError.missing("PlaceRepository")
+    }
+}
+
+private struct MissingVisitRepository: VisitRepository {
+    func save(_ command: CreateVisitCommand) async throws -> UUID {
+        throw MissingEnvironmentDependencyError.missing("VisitRepository")
+    }
+
+    func update(_ command: UpdateVisitCommand) async throws {
+        throw MissingEnvironmentDependencyError.missing("VisitRepository")
+    }
+
+    func delete(_ command: DeleteVisitCommand) async throws {
+        throw MissingEnvironmentDependencyError.missing("VisitRepository")
+    }
+
+    func recentRows(limit: Int) async throws -> [RecentVisitRow] {
+        throw MissingEnvironmentDependencyError.missing("VisitRepository")
+    }
+
+    func detail(id: UUID) async throws -> VisitDetail? {
+        throw MissingEnvironmentDependencyError.missing("VisitRepository")
+    }
+}
+
+private struct MissingTagRepository: TagRepository {
+    func findOrCreate(name: String) async throws -> UUID {
+        throw MissingEnvironmentDependencyError.missing("TagRepository")
+    }
+
+    func suggestions(prefix: String, limit: Int) async throws -> [TagSuggestion] {
+        throw MissingEnvironmentDependencyError.missing("TagRepository")
+    }
+
+    func all() async throws -> [TagSuggestion] {
+        throw MissingEnvironmentDependencyError.missing("TagRepository")
+    }
+}
+
+private struct MissingPhotoRepository: PhotoRepository {
+    func insertProcessed(_ processed: ProcessedPhoto, caption: String?, into visitID: UUID) async throws -> UUID {
+        throw MissingEnvironmentDependencyError.missing("PhotoRepository")
+    }
+
+    func remove(_ photoID: UUID) async throws {
+        throw MissingEnvironmentDependencyError.missing("PhotoRepository")
+    }
+}
+
+private struct MissingTombstoneRepository: TombstoneRepository {
+    func insertTombstone(entityKind: SyncEntityKind, entityID: UUID, remoteID: String?) async throws {
+        throw MissingEnvironmentDependencyError.missing("TombstoneRepository")
+    }
+
+    func all() async throws -> [TombstoneDTO] {
+        throw MissingEnvironmentDependencyError.missing("TombstoneRepository")
+    }
+}
+
+private struct MissingLocationSearchService: LocationSearchService {
+    func search(query: String, near: CLLocationCoordinate2D?) async throws -> [MapKitPlaceDraft] {
+        throw MissingEnvironmentDependencyError.missing("LocationSearchService")
+    }
+}
+
+private final class MissingLocationPermissionService: LocationPermissionService, @unchecked Sendable {
+    var status: LocationAuthorization {
+        get async { .denied }
+    }
+
+    var statusChanges: AsyncStream<LocationAuthorization> {
+        AsyncStream { $0.finish() }
+    }
+
+    func requestWhenInUse() async {}
+}
+
+private struct MissingPhotoProcessingService: PhotoProcessingService {
+    nonisolated func process(_ raw: Data) async throws -> ProcessedPhoto {
+        throw MissingEnvironmentDependencyError.missing("PhotoProcessingService")
+    }
+}
+
+private actor NoopRemoteSyncCoordinator: RemoteSyncCoordinator {
+    func markDirty(_ kind: SyncEntityKind, id: UUID) async {}
 }

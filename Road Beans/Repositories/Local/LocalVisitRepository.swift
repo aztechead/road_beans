@@ -114,7 +114,8 @@ final class LocalVisitRepository: VisitRepository {
             RecentVisitRow(
                 visit: Self.toVisitRow(visit),
                 placeName: visit.place?.name ?? "Unknown",
-                placeKind: visit.place?.kind ?? .other
+                placeKind: visit.place?.kind ?? .other,
+                drinkNames: visit.drinks.map(\.name)
             )
         }
     }
