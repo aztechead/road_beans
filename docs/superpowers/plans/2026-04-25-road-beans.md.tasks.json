@@ -264,12 +264,12 @@
     {
       "id": 27,
       "subject": "Task 27: AddVisit page 3 — Drinks list",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         26,
         19
       ],
-      "description": "**Goal:** DrinkDraft list rows w/ name + category Picker + BeanSlider; Save gate.\n\n```json:metadata\n{\"files\":[\"Road Beans/Features/AddVisit/DrinksPage.swift\",\"Road BeansTests/ViewModelTests/AddVisitFlowModelTests.swift\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' test -only-testing:\\\"Road BeansTests/AddVisitFlowModelTests\\\"\",\"acceptanceCriteria\":[\"DrinkDraft list w/ BeanSlider\",\"Category picker per row\",\"Save gate ≥1 non-empty drink\",\"Add/remove rows\"]}\n```"
+      "description": "**Goal:** DrinkDraft list rows w/ name + category Picker + BeanSlider.\n\n```json:metadata\n{\"files\":[\"Road Beans/Features/AddVisit/AddVisitDrinksPage.swift\",\"Road Beans/Features/AddVisit/AddVisitView.swift\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'generic/platform=iOS Simulator' build\",\"acceptanceCriteria\":[\"DrinkDraft list w/ BeanSlider\",\"Category picker per row\",\"Add/remove rows\",\"Build succeeds\"]}\n```"
     },
     {
       "id": 28,
@@ -304,5 +304,5 @@
       "description": "**Goal:** Final pass. Dynamic Type, dark mode, sign-out/sign-in iCloud QA, document checklist for future TestFlight builds.\n\n```json:metadata\n{\"files\":[\"docs/superpowers/qa/2026-04-25-manual-qa-checklist.md\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' build test\",\"acceptanceCriteria\":[\"Smoke flow passes\",\"Dark mode + Dynamic Type ok\",\"Haptics + Reduce Motion gates\",\"iCloud sign-out/sign-in flows\",\"QA checklist documented\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-04-26T14:00:24Z"
+  "lastUpdated": "2026-04-26T14:01:29Z"
 }

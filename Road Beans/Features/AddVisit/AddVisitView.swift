@@ -18,6 +18,8 @@ struct AddVisitView: View {
                             .tag(0)
                         AddVisitVisitPage(model: model)
                             .tag(1)
+                        AddVisitDrinksPage(model: model)
+                            .tag(2)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                 } else {
