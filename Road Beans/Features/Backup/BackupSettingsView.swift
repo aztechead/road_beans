@@ -86,5 +86,10 @@ struct BackupSettingsView: View {
 }
 
 #Preview {
+    let controller = PersistenceController(
+        icloud: FakeICloudAvailabilityService(),
+        useInMemoryStores: true
+    )
     BackupSettingsView()
+        .environment(controller)
 }
