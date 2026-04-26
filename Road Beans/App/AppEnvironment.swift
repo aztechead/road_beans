@@ -5,7 +5,6 @@ import SwiftUI
 #if STUB_REPOSITORY_PROTOCOLS_NOT_YET_DEFINED
 protocol VisitRepository: Sendable {}
 protocol LocationSearchService: Sendable {}
-protocol LocationPermissionService: Sendable {}
 #endif
 
 // MARK: - Environment Keys
