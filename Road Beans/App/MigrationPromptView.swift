@@ -6,6 +6,7 @@ struct MigrationPromptView: View {
     @Environment(\.dataExportService) private var exportService
     @State private var exportURL: URL?
     @State private var isExporting = false
+    @State private var exportError: String?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -39,6 +40,13 @@ struct MigrationPromptView: View {
                 }
             }
 
+            if let exportError {
+                Text(exportError)
+                    .font(.roadBeansBody)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+
             Button("Keep Local Only", action: keepLocalOnly)
                 .buttonStyle(.bordered)
         }
@@ -47,8 +55,13 @@ struct MigrationPromptView: View {
 
     private func prepareExport() async {
         isExporting = true
+        exportError = nil
         defer { isExporting = false }
-        exportURL = try? await exportService.writeExportFile()
+        do {
+            exportURL = try await exportService.writeExportFile()
+        } catch {
+            exportError = "Export failed. Please try again."
+        }
     }
 }
 
