@@ -42,6 +42,11 @@ struct MapTabView: View {
                 await viewModel?.reload(allowingNearMe: viewModel?.nearMeOn ?? false)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .roadBeansPlaceUpdated)) { _ in
+            Task {
+                await viewModel?.reload(allowingNearMe: viewModel?.nearMeOn ?? false)
+            }
+        }
     }
 
     private func content(_ viewModel: MapTabViewModel) -> some View {

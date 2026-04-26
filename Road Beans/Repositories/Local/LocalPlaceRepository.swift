@@ -41,6 +41,24 @@ final class LocalPlaceRepository: PlaceRepository {
         }
     }
 
+    func update(_ command: UpdatePlaceCommand) async throws {
+        let id = command.id
+        let predicate = #Predicate<Place> { $0.id == id }
+        var descriptor = FetchDescriptor<Place>(predicate: predicate)
+        descriptor.fetchLimit = 1
+
+        guard let place = try context.fetch(descriptor).first else {
+            throw VisitRepositoryError.notFound
+        }
+
+        place.name = command.name
+        place.kind = command.kind
+        place.address = command.address
+        place.lastModifiedAt = Date.now
+        try context.save()
+        await sync.markDirty(.place, id: place.id)
+    }
+
     func summaries() async throws -> [PlaceSummary] {
         let descriptor = FetchDescriptor<Place>(
             sortBy: [SortDescriptor(\.lastModifiedAt, order: .reverse)]

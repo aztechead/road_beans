@@ -7,6 +7,7 @@ struct VisitDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: VisitDetailViewModel?
     @State private var isConfirmingDelete = false
+    @State private var isEditing = false
 
     var body: some View {
         Group {
@@ -33,10 +34,24 @@ struct VisitDetailView: View {
         .task { await ensureLoaded() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                Button("Edit") {
+                    isEditing = true
+                }
+                .disabled(viewModel?.detail == nil)
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
                     isConfirmingDelete = true
                 } label: {
                     Image(systemName: "trash")
+                }
+            }
+        }
+        .sheet(isPresented: $isEditing) {
+            if let detail = viewModel?.detail {
+                EditVisitView(detail: detail) { command in
+                    try await viewModel?.update(command)
                 }
             }
         }
@@ -173,6 +188,7 @@ struct VisitDetailView: View {
 
 extension Notification.Name {
     static let roadBeansVisitDeleted = Notification.Name("RoadBeans.visitDeleted")
+    static let roadBeansPlaceUpdated = Notification.Name("RoadBeans.placeUpdated")
 }
 
 private struct FlowTags: View {

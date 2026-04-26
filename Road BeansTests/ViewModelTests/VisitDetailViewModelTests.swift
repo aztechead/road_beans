@@ -56,4 +56,35 @@ struct VisitDetailViewModelTests {
 
         #expect(visits.deletedIDs == [id])
     }
+
+    @Test func updatePassesCommandAndReloads() async throws {
+        let visits = FakeVisitRepository()
+        let id = UUID()
+        visits.details[id] = VisitDetail(
+            id: id,
+            date: .now,
+            placeID: UUID(),
+            placeName: "Loves",
+            placeKind: .truckStop,
+            drinks: [],
+            tagNames: [],
+            photos: []
+        )
+        let viewModel = VisitDetailViewModel(visits: visits, visitID: id)
+        let command = UpdateVisitCommand(
+            id: id,
+            date: .now,
+            tags: ["updated"],
+            drinks: [DrinkDraft(name: "Latte", category: .espresso, rating: 4, tags: ["milk"])],
+            photoAdditions: nil,
+            photoRemovals: nil
+        )
+
+        try await viewModel.update(command)
+
+        #expect(visits.updated.count == 1)
+        #expect(visits.updated[0].id == id)
+        #expect(visits.updated[0].tags == ["updated"])
+        #expect(viewModel.state == .loaded)
+    }
 }

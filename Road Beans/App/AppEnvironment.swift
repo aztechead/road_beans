@@ -114,6 +114,10 @@ private struct MissingPlaceRepository: PlaceRepository {
         throw MissingEnvironmentDependencyError.missing("PlaceRepository")
     }
 
+    func update(_ command: UpdatePlaceCommand) async throws {
+        throw MissingEnvironmentDependencyError.missing("PlaceRepository")
+    }
+
     func summaries() async throws -> [PlaceSummary] {
         throw MissingEnvironmentDependencyError.missing("PlaceRepository")
     }

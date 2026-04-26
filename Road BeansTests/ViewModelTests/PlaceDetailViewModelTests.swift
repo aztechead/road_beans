@@ -54,4 +54,34 @@ struct PlaceDetailViewModelTests {
         #expect(viewModel.state.errorMessage != nil)
         #expect(viewModel.detail == nil)
     }
+
+    @Test func updatePassesCommandAndReloads() async throws {
+        let repository = FakePlaceRepository()
+        let id = UUID()
+        repository.details[id] = PlaceDetail(
+            id: id,
+            name: "Old",
+            kind: .truckStop,
+            source: .custom,
+            address: nil,
+            streetNumber: nil,
+            streetName: nil,
+            city: nil,
+            region: nil,
+            postalCode: nil,
+            country: nil,
+            phoneNumber: nil,
+            websiteURL: nil,
+            coordinate: nil,
+            averageRating: nil,
+            visits: []
+        )
+        let viewModel = PlaceDetailViewModel(placeRepo: repository)
+        let command = UpdatePlaceCommand(id: id, name: "New", kind: .coffeeShop, address: "Main")
+
+        try await viewModel.update(command)
+
+        #expect(repository.updates == [command])
+        #expect(viewModel.state == .loaded)
+    }
 }

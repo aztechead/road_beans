@@ -6,6 +6,7 @@ struct PlaceDetailView: View {
     @Environment(\.placeRepository) private var placeRepository
     @State private var viewModel: PlaceDetailViewModel?
     @State private var expandedVisits: Set<UUID> = []
+    @State private var isEditing = false
 
     var body: some View {
         Group {
@@ -29,6 +30,22 @@ struct PlaceDetailView: View {
             }
         }
         .navigationTitle("Place")
+        .toolbar {
+            if viewModel?.detail != nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Edit") {
+                        isEditing = true
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $isEditing) {
+            if let detail = viewModel?.detail {
+                EditPlaceView(detail: detail) { command in
+                    try await viewModel?.update(command)
+                }
+            }
+        }
         .task {
             await ensureLoaded()
         }
@@ -36,6 +53,9 @@ struct PlaceDetailView: View {
             Task { await ensureLoaded() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitDeleted)) { _ in
+            Task { await ensureLoaded() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .roadBeansPlaceUpdated)) { _ in
             Task { await ensureLoaded() }
         }
     }

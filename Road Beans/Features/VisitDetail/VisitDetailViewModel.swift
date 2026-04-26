@@ -29,4 +29,9 @@ final class VisitDetailViewModel {
     func delete() async throws {
         try await visits.delete(DeleteVisitCommand(id: visitID))
     }
+
+    func update(_ command: UpdateVisitCommand) async throws {
+        try await visits.update(command)
+        await load()
+    }
 }

@@ -6,11 +6,16 @@ final class FakePlaceRepository: PlaceRepository, @unchecked Sendable {
     var stored: [PlaceSummary] = []
     var details: [UUID: PlaceDetail] = [:]
     var summariesNearCalls: [(coordinate: CLLocationCoordinate2D, radiusMeters: Double)] = []
+    var updates: [UpdatePlaceCommand] = []
     var summariesError: Error?
     var detailError: Error?
 
     func findOrCreate(reference: PlaceReference) async throws -> UUID {
         UUID()
+    }
+
+    func update(_ command: UpdatePlaceCommand) async throws {
+        updates.append(command)
     }
 
     func summaries() async throws -> [PlaceSummary] {
@@ -34,6 +39,7 @@ final class FakeVisitRepository: VisitRepository, @unchecked Sendable {
     var recents: [RecentVisitRow] = []
     var details: [UUID: VisitDetail] = [:]
     var saved: [CreateVisitCommand] = []
+    var updated: [UpdateVisitCommand] = []
     var deletedIDs: [UUID] = []
     var recentsError: Error?
     var detailError: Error?
@@ -43,7 +49,9 @@ final class FakeVisitRepository: VisitRepository, @unchecked Sendable {
         return UUID()
     }
 
-    func update(_ command: UpdateVisitCommand) async throws {}
+    func update(_ command: UpdateVisitCommand) async throws {
+        updated.append(command)
+    }
 
     func delete(_ command: DeleteVisitCommand) async throws {
         deletedIDs.append(command.id)

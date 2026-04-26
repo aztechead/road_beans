@@ -118,6 +118,28 @@ struct LocalPlaceRepositoryTests {
         #expect(!summaries.map(\.id).contains(farID))
     }
 
+    @Test func updateChangesEditableFieldsAndMarksDirty() async throws {
+        let (repo, _, sync) = try makeRepo()
+        let id = try await repo.findOrCreate(
+            reference: .newCustom(CustomPlaceDraft(name: "Old", kind: .truckStop, address: nil))
+        )
+
+        try await repo.update(
+            UpdatePlaceCommand(
+                id: id,
+                name: "New",
+                kind: .coffeeShop,
+                address: "1 Main"
+            )
+        )
+
+        let detail = try #require(try await repo.detail(id: id))
+        #expect(detail.name == "New")
+        #expect(detail.kind == .coffeeShop)
+        #expect(detail.address == "1 Main")
+        #expect(await sync.recordedCalls.contains(.init(kind: .place, id: id)))
+    }
+
     private func mapKitDraft(
         name: String,
         mapKitIdentifier: String?,

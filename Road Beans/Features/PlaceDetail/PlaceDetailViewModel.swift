@@ -23,4 +23,9 @@ final class PlaceDetailViewModel {
             state = .failed("Road Beans could not load this stop. Try again.")
         }
     }
+
+    func update(_ command: UpdatePlaceCommand) async throws {
+        try await placeRepository.update(command)
+        await load(id: command.id)
+    }
 }
