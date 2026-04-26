@@ -65,6 +65,8 @@ xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'ge
 
 ## Task 2: Implement the Real iOS 26 MapKit Address Fix
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Fully remove deprecated `MKPlacemark`/`MKMapItem.placemark` assumptions and preserve useful address display with iOS 26 MapKit APIs.
 
 **Rationale:** The quick deprecation cleanup uses `MKMapItem.location`, `address`, and `addressRepresentations`, but the model still has older structured fields like street number, street name, region, and postal code. iOS 26 MapKit no longer exposes those through `MKMapItem` directly. The real fix is to adjust the app’s MapKit import/read-model path to store what the modern API reliably provides.

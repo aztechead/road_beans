@@ -27,21 +27,18 @@ final class SystemLocationSearchService: LocationSearchService, @unchecked Senda
         }
 
         let response = try await MKLocalSearch(request: request).start()
-        return response.mapItems.map(Self.toDraft(_:))
+        return response.mapItems.map(Self.draft(from:))
     }
 
-    private static func toDraft(_ item: MKMapItem) -> MapKitPlaceDraft {
+    static func draft(from item: MKMapItem) -> MapKitPlaceDraft {
         let location = item.location
-        let address = item.address?.shortAddress
-            ?? item.address?.fullAddress
-            ?? item.addressRepresentations?.fullAddress(includingRegion: false, singleLine: true)
 
         return MapKitPlaceDraft(
-            name: item.name ?? "Place",
+            name: nonBlank(item.name) ?? "Place",
             kind: inferKind(from: item.pointOfInterestCategory),
             mapKitIdentifier: item.identifier?.rawValue,
-            mapKitName: item.name,
-            address: address,
+            mapKitName: nonBlank(item.name),
+            address: displayAddress(for: item),
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude,
             phoneNumber: item.phoneNumber,
@@ -53,6 +50,18 @@ final class SystemLocationSearchService: LocationSearchService, @unchecked Senda
             postalCode: nil,
             country: item.addressRepresentations?.regionName
         )
+    }
+
+    private static func displayAddress(for item: MKMapItem) -> String? {
+        nonBlank(item.address?.shortAddress)
+            ?? nonBlank(item.address?.fullAddress)
+            ?? nonBlank(item.addressRepresentations?.fullAddress(includingRegion: false, singleLine: true))
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private static func inferKind(from category: MKPointOfInterestCategory?) -> PlaceKind {
