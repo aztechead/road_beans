@@ -35,14 +35,15 @@ final class AddVisitFlowModel {
         self.photoProcessor = photoProcessor
     }
 
-    func search() {
+    @discardableResult
+    func search() -> Task<Void, Never>? {
         searchTask?.cancel()
 
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
             searchResults = []
             searchState = .idle
-            return
+            return nil
         }
 
         searchState = .loading
@@ -67,6 +68,7 @@ final class AddVisitFlowModel {
                 }
             }
         }
+        return searchTask
     }
 
     func selectMapKit(_ draft: MapKitPlaceDraft) {

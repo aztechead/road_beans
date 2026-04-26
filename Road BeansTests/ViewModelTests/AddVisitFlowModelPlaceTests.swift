@@ -60,8 +60,7 @@ struct AddVisitFlowModelPlaceTests {
         let model = makeModel()
 
         model.searchText = "nothing"
-        model.search()
-        try await Task.sleep(nanoseconds: 350_000_000)
+        await model.search()?.value
 
         #expect(model.searchState == .empty)
         #expect(model.searchResults.isEmpty)
@@ -76,8 +75,7 @@ struct AddVisitFlowModelPlaceTests {
         )
 
         model.searchText = "coffee"
-        model.search()
-        try await Task.sleep(nanoseconds: 350_000_000)
+        await model.search()?.value
 
         #expect(model.searchState.errorMessage != nil)
         #expect(model.searchResults.isEmpty)
