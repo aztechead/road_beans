@@ -16,33 +16,49 @@ struct BeanSlider: View {
     private let thumbDiameter: CGFloat = 52
 
     var body: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
-            let progress = normalizedProgress
-            let thumbX = min(max(width * CGFloat(progress), thumbDiameter / 2), width - thumbDiameter / 2)
+        VStack(spacing: 8) {
+            GeometryReader { geometry in
+                let width = geometry.size.width
+                let progress = normalizedProgress
+                let thumbX = min(max(width * CGFloat(progress), thumbDiameter / 2), width - thumbDiameter / 2)
 
-            ZStack(alignment: .leading) {
-                track
+                ZStack(alignment: .leading) {
+                    track
 
-                BeanGlyph(beanCount: BeanGlyph.beanCount(for: value), pixelSize: 3)
-                    .scaleEffect(glyphPulse && !reduceMotion ? 1.14 : 1)
-                    .opacity(reduceMotion && glyphPulse ? 0.78 : 1)
-                    .offset(x: thumbX - 24, y: -48)
-                    .animation(reduceMotion ? .easeInOut(duration: 0.12) : .spring(response: 0.25, dampingFraction: 0.55), value: glyphPulse)
-                    .animation(.easeInOut(duration: 0.12), value: BeanGlyph.beanCount(for: value))
+                    BeanGlyph(beanCount: BeanGlyph.beanCount(for: value), pixelSize: 3)
+                        .scaleEffect(glyphPulse && !reduceMotion ? 1.14 : 1)
+                        .opacity(reduceMotion && glyphPulse ? 0.78 : 1)
+                        .offset(x: thumbX - 24, y: -48)
+                        .animation(reduceMotion ? .easeInOut(duration: 0.12) : .spring(response: 0.25, dampingFraction: 0.55), value: glyphPulse)
+                        .animation(.easeInOut(duration: 0.12), value: BeanGlyph.beanCount(for: value))
 
-                thumb
-                    .offset(x: thumbX - thumbDiameter / 2)
+                    thumb
+                        .offset(x: thumbX - thumbDiameter / 2)
+                }
+                .contentShape(Rectangle())
+                .gesture(dragGesture(width: width))
+                .accessibilityElement()
+                .accessibilityLabel("Drink rating")
+                .accessibilityHint("Swipe up or down to adjust by one tenth of a bean.")
+                .accessibilityValue(BeanSliderModel.accessibilityValueText(value))
+                .accessibilityAdjustableAction(adjustAccessibilityValue)
             }
-            .contentShape(Rectangle())
-            .gesture(dragGesture(width: width))
-            .accessibilityElement()
-            .accessibilityLabel("Drink rating")
-            .accessibilityHint("Swipe up or down to adjust by one tenth of a bean.")
-            .accessibilityValue(BeanSliderModel.accessibilityValueText(value))
-            .accessibilityAdjustableAction(adjustAccessibilityValue)
+            .frame(height: 88)
+
+            beanRow
         }
-        .frame(height: 88)
+    }
+
+    private var beanRow: some View {
+        HStack(spacing: 0) {
+            ForEach(1...5, id: \.self) { i in
+                BeanGlyph(beanCount: 1, pixelSize: 3)
+                    .frame(maxWidth: .infinity)
+                    .opacity(value >= Double(i) ? 1.0 : 0.25)
+                    .animation(.easeInOut(duration: 0.1), value: value >= Double(i))
+            }
+        }
+        .accessibilityHidden(true)
     }
 
     private var normalizedProgress: Double {
