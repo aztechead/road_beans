@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BackupSettingsView: View {
     @Environment(\.dataExportService) private var exportService
+    @Environment(PersistenceController.self) private var persistence
     @State private var exportURL: URL?
     @State private var isExporting = false
     @State private var errorMessage: String?
@@ -9,6 +10,23 @@ struct BackupSettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("iCloud") {
+                    switch persistence.mode {
+                    case .cloudKitBacked:
+                        Label("iCloud Sync Active", systemImage: "checkmark.icloud.fill")
+                            .foregroundStyle(.green)
+                    case .localOnly:
+                        Label("iCloud Sync Off", systemImage: "icloud.slash")
+                            .foregroundStyle(.secondary)
+                    case .pendingMigration:
+                        Label("iCloud Ready — local data pending", systemImage: "icloud.and.arrow.up")
+                            .foregroundStyle(.orange)
+                    case .pendingRelaunch:
+                        Label("iCloud Account Changed — restart required", systemImage: "exclamationmark.icloud")
+                            .foregroundStyle(.orange)
+                    }
+                }
+
                 Section {
                     VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
                         Label("Export Road Beans JSON", systemImage: "square.and.arrow.up")
