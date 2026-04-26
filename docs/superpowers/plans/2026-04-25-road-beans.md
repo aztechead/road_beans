@@ -5589,7 +5589,7 @@ git commit -m "feat: AddVisit page 3 — drinks list with Bean Slider"
 
 ### Task 28: AddVisit save flow + paged sheet wiring + toast
 
-**Goal:** Wire the three pages into one paged TabView in `AddVisitView`. Save button on page 3 (disabled until ≥1 drink). On save: process raw photos → ProcessedPhoto, build `CreateVisitCommand`, call `VisitRepository.save`, attach photos via `PhotoRepository.insertProcessed`, dismiss, post a toast notification.
+**Goal:** Wire the three pages into one paged TabView in `AddVisitView`. Save button on page 3 (disabled until ≥1 drink). On save: build `CreateVisitCommand`, call `VisitRepository.save`, dismiss, post a toast notification. `LocalVisitRepository.save` owns raw photo processing and `PhotoRepository.insertProcessed` to avoid duplicating photo persistence in the view model.
 
 **Files:**
 - Modify: `Road Beans/Features/AddVisit/AddVisitView.swift`
@@ -5602,7 +5602,7 @@ git commit -m "feat: AddVisit page 3 — drinks list with Bean Slider"
 - [ ] `AddVisitView` is a `TabView(selection: $model.currentPage).tabViewStyle(.page(indexDisplayMode: .never))` with three pages.
 - [ ] Top toolbar: Cancel always; Back when page > 0; Next on pages 0/1; Save on page 2 (disabled if drinks empty or placeRef nil).
 - [ ] `model.save() async throws -> String` returns the toast text "Added to *Place name*."
-- [ ] On save: photo drafts are processed via `PhotoProcessingService`, then `VisitRepository.save` runs the create, then `PhotoRepository.insertProcessed` for each.
+- [ ] On save: `VisitRepository.save` receives the create command including `PhotoDraft`s; the repository handles photo processing and persistence.
 - [ ] After save: posts `Notification.Name.roadBeansVisitSaved` with the toast string in `userInfo["text"]`.
 - [ ] `RootToastOverlay` listens and shows a transient glass card for 2.5s.
 - [ ] Tests: save with empty drinks throws; save with valid drinks calls `visits.save` once with a `CreateVisitCommand` that matches inputs.

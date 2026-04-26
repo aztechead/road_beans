@@ -274,12 +274,12 @@
     {
       "id": 28,
       "subject": "Task 28: AddVisit save flow + paged sheet + toast",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         27,
         14
       ],
-      "description": "**Goal:** Paged TabView; Save → VisitRepository.create; on success notification + toast overlay.\n\n```json:metadata\n{\"files\":[\"Road Beans/Features/AddVisit/AddVisitView.swift\",\"Road Beans/Features/AddVisit/AddVisitContainer.swift\",\"Road Beans/App/RootToastOverlay.swift\",\"Road Beans/App/RootView.swift\",\"Road BeansTests/ViewModelTests/AddVisitFlowModelTests.swift\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' test -only-testing:\\\"Road BeansTests/AddVisitFlowModelTests\\\"\",\"acceptanceCriteria\":[\"Paged TabView\",\"Save → VisitRepository.create\",\"Notification posted on success\",\"Toast overlay animates\"]}\n```"
+      "description": "**Goal:** Paged TabView; Save → VisitRepository.save; on success notification + toast overlay.\n\n```json:metadata\n{\"files\":[\"Road Beans/Features/AddVisit/AddVisitView.swift\",\"Road Beans/Features/AddVisit/AddVisitFlowModel+Save.swift\",\"Road Beans/Features/RootToastOverlay.swift\",\"Road Beans/App/RootView.swift\",\"Road BeansTests/ViewModelTests/AddVisitSaveTests.swift\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' test -only-testing:\\\"Road BeansTests/AddVisitSaveTests\\\"\",\"acceptanceCriteria\":[\"Paged TabView\",\"Save → VisitRepository.save\",\"Notification posted on success\",\"Toast overlay animates\",\"Repository owns photo processing/persistence\"]}\n```"
     },
     {
       "id": 29,
@@ -304,5 +304,5 @@
       "description": "**Goal:** Final pass. Dynamic Type, dark mode, sign-out/sign-in iCloud QA, document checklist for future TestFlight builds.\n\n```json:metadata\n{\"files\":[\"docs/superpowers/qa/2026-04-25-manual-qa-checklist.md\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' build test\",\"acceptanceCriteria\":[\"Smoke flow passes\",\"Dark mode + Dynamic Type ok\",\"Haptics + Reduce Motion gates\",\"iCloud sign-out/sign-in flows\",\"QA checklist documented\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-04-26T14:01:29Z"
+  "lastUpdated": "2026-04-26T14:04:14Z"
 }

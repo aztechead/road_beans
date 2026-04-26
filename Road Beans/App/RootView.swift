@@ -24,26 +24,31 @@ struct RootView: View {
     }
 
     private var tabs: some View {
-        TabView(selection: $selectedTab) {
-            PlaceListView()
-                .tabItem { Label("List", systemImage: "list.bullet") }
-                .tag(AppTab.list)
+        ZStack {
+            TabView(selection: $selectedTab) {
+                PlaceListView()
+                    .tabItem { Label("List", systemImage: "list.bullet") }
+                    .tag(AppTab.list)
 
-            MapTabView()
-                .tabItem { Label("Map", systemImage: "map.fill") }
-                .tag(AppTab.map)
+                MapTabView()
+                    .tabItem { Label("Map", systemImage: "map.fill") }
+                    .tag(AppTab.map)
 
-            Color.clear
-                .tabItem { Label("Add", systemImage: "plus.circle.fill") }
-                .tag(AppTab.add)
-        }
-        .onChange(of: selectedTab) { _, newTab in
-            guard newTab == .add else { return }
-            isShowingAddVisit = true
-            selectedTab = .list
-        }
-        .fullScreenCover(isPresented: $isShowingAddVisit) {
-            AddVisitView()
+                Color.clear
+                    .tabItem { Label("Add", systemImage: "plus.circle.fill") }
+                    .tag(AppTab.add)
+            }
+            .onChange(of: selectedTab) { _, newTab in
+                guard newTab == .add else { return }
+                isShowingAddVisit = true
+                selectedTab = .list
+            }
+            .fullScreenCover(isPresented: $isShowingAddVisit) {
+                AddVisitView()
+            }
+
+            RootToastOverlay()
+                .allowsHitTesting(false)
         }
     }
 }
