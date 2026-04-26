@@ -14,6 +14,7 @@ struct Road_BeansApp: App {
     private let tombstoneRepository: any TombstoneRepository
     private let locationSearchService: any LocationSearchService
     private let locationPermissionService: any LocationPermissionService
+    private let currentLocationProvider: any CurrentLocationProvider
     private let photoProcessingService: any PhotoProcessingService
 
     @MainActor
@@ -46,6 +47,7 @@ struct Road_BeansApp: App {
         self.tombstoneRepository = tombstones
         self.locationSearchService = SystemLocationSearchService()
         self.locationPermissionService = SystemLocationPermissionService()
+        self.currentLocationProvider = SystemCurrentLocationProvider()
         self.photoProcessingService = photoProcessing
         self._persistence = State(initialValue: persistence)
     }
@@ -62,6 +64,7 @@ struct Road_BeansApp: App {
                 .environment(\.tombstoneRepository, tombstoneRepository)
                 .environment(\.locationSearchService, locationSearchService)
                 .environment(\.locationPermissionService, locationPermissionService)
+                .environment(\.currentLocationProvider, currentLocationProvider)
                 .environment(\.photoProcessingService, photoProcessingService)
                 .environment(\.iCloudAvailability, icloud)
                 .environment(\.remoteSyncCoordinator, sync)

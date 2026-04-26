@@ -1,4 +1,4 @@
-import MapKit
+import CoreLocation
 import SwiftUI
 
 struct PlaceDetailView: View {
@@ -68,9 +68,7 @@ struct PlaceDetailView: View {
 
             if let coordinate = detail.coordinate {
                 Button {
-                    let item = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
-                    item.name = detail.name
-                    item.openInMaps()
+                    openInMaps(name: detail.name, coordinate: coordinate)
                 } label: {
                     Label("Open in Maps", systemImage: "map.fill")
                 }
@@ -162,6 +160,20 @@ struct PlaceDetailView: View {
             expandedVisits.remove(id)
         } else {
             expandedVisits.insert(id)
+        }
+    }
+
+    private func openInMaps(name: String, coordinate: CLLocationCoordinate2D) {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "maps.apple.com"
+        components.queryItems = [
+            URLQueryItem(name: "ll", value: "\(coordinate.latitude),\(coordinate.longitude)"),
+            URLQueryItem(name: "q", value: name)
+        ]
+
+        if let url = components.url {
+            UIApplication.shared.open(url)
         }
     }
 }

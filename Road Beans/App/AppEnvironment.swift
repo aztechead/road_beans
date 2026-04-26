@@ -36,6 +36,10 @@ private struct LocationPermissionServiceKey: EnvironmentKey {
     static let defaultValue: any LocationPermissionService = MissingLocationPermissionService()
 }
 
+private struct CurrentLocationProviderKey: EnvironmentKey {
+    static let defaultValue: any CurrentLocationProvider = MissingCurrentLocationProvider()
+}
+
 private struct PhotoProcessingServiceKey: EnvironmentKey {
     static let defaultValue: any PhotoProcessingService = MissingPhotoProcessingService()
 }
@@ -82,6 +86,11 @@ extension EnvironmentValues {
     var locationPermissionService: any LocationPermissionService {
         get { self[LocationPermissionServiceKey.self] }
         set { self[LocationPermissionServiceKey.self] = newValue }
+    }
+
+    var currentLocationProvider: any CurrentLocationProvider {
+        get { self[CurrentLocationProviderKey.self] }
+        set { self[CurrentLocationProviderKey.self] = newValue }
     }
 
     var photoProcessingService: any PhotoProcessingService {
@@ -190,6 +199,12 @@ private final class MissingLocationPermissionService: LocationPermissionService,
     }
 
     func requestWhenInUse() async {}
+}
+
+private struct MissingCurrentLocationProvider: CurrentLocationProvider {
+    func currentCoordinate() async throws -> CLLocationCoordinate2D {
+        throw MissingEnvironmentDependencyError.missing("CurrentLocationProvider")
+    }
 }
 
 private struct MissingPhotoProcessingService: PhotoProcessingService {

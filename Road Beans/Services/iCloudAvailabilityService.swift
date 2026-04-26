@@ -7,8 +7,8 @@ protocol iCloudAvailabilityServiceProtocol: Sendable {
 
 final class SystemICloudAvailabilityService: iCloudAvailabilityServiceProtocol, @unchecked Sendable {
     private let lock = NSLock()
-    private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
-    private var observer: NSObjectProtocol?
+    nonisolated(unsafe) private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
+    nonisolated(unsafe) private var observer: NSObjectProtocol?
 
     var identityChanges: AsyncStream<Void> {
         AsyncStream { continuation in
@@ -58,9 +58,9 @@ final class SystemICloudAvailabilityService: iCloudAvailabilityServiceProtocol, 
 }
 
 final class FakeICloudAvailabilityService: iCloudAvailabilityServiceProtocol, @unchecked Sendable {
-    var token: AnyHashable?
+    nonisolated(unsafe) var token: AnyHashable?
     private let lock = NSLock()
-    private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
+    nonisolated(unsafe) private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
 
     var identityChanges: AsyncStream<Void> {
         AsyncStream { continuation in

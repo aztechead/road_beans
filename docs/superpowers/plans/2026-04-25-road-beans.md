@@ -6035,5 +6035,5 @@ git commit -m "docs: add v1 manual QA checklist"
 
 - **Photo persistence in the create flow** is repository-owned: `CreateVisitCommand` carries `PhotoDraft`s, and `LocalVisitRepository.save` processes and inserts photos through `PhotoRepository`.
 - **`PersistenceController.migrateLocalToCloudKit()` throws `notYetImplemented`** in Task 7 — the migration UI prompt is wired (Task 20), but the actual cross-container copy is left as a v1 fast-follow because exercising it requires real iCloud and is best done with manual QA. Spec §6 documents the expected behavior.
-- **`MapTabViewModel.reload(allowingNearMe:)`** calls the near-query path with a placeholder coordinate. Once a current-location source is wired (v1.1), it should pass the device coordinate.
+- **`MapTabViewModel.reload(allowingNearMe:)`** calls the near-query path with the device/simulator coordinate when Location Services are authorized and a current location is available.
 - **No UI tests** in v1 (per spec §13). Manual checklist (Task 30) covers regressions.

@@ -23,6 +23,8 @@ final class DefaultPhotoProcessingService: PhotoProcessingService, @unchecked Se
     private nonisolated static let mainMaxEdge: CGFloat = 2048
     private nonisolated static let thumbnailMaxEdge: CGFloat = 256
 
+    nonisolated init() {}
+
     nonisolated func process(_ raw: Data) async throws -> ProcessedPhoto {
         try await Task.detached(priority: .userInitiated) {
             guard let image = UIImage(data: raw) else {

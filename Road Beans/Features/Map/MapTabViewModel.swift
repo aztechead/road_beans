@@ -8,13 +8,20 @@ final class MapTabViewModel {
     var places: [PlaceSummary] = []
     var nearMeOn = false
     var permissionStatus: LocationAuthorization = .notDetermined
+    var currentLocationUnavailable = false
 
     private let placeRepository: any PlaceRepository
     private let permission: any LocationPermissionService
+    private let currentLocation: any CurrentLocationProvider
 
-    init(places: any PlaceRepository, permission: any LocationPermissionService) {
+    init(
+        places: any PlaceRepository,
+        permission: any LocationPermissionService,
+        currentLocation: any CurrentLocationProvider
+    ) {
         self.placeRepository = places
         self.permission = permission
+        self.currentLocation = currentLocation
     }
 
     func refreshPermissionStatus() async {
@@ -30,14 +37,17 @@ final class MapTabViewModel {
     func reload(allowingNearMe: Bool) async {
         do {
             if allowingNearMe, permissionStatus == .authorized {
+                let coordinate = try await currentLocation.currentCoordinate()
                 places = try await placeRepository.summariesNear(
-                    coordinate: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+                    coordinate: coordinate,
                     radiusMeters: 50_000
                 )
             } else {
                 places = try await placeRepository.summaries()
             }
+            currentLocationUnavailable = false
         } catch {
+            currentLocationUnavailable = allowingNearMe && permissionStatus == .authorized
             places = []
         }
     }

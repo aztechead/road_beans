@@ -46,5 +46,5 @@ Run before each TestFlight build.
 - [ ] Search by drink name in Recent Visits mode.
 
 ## Known V1 Limits
-- [ ] Current-location sourcing is not wired yet; near-me uses the repository near-query path with a placeholder coordinate.
+- [ ] Near-me requires Location Services permission and an available device/simulator location fix.
 - [ ] iCloud data migration copy is not implemented; prompt flow is present for manual QA.

@@ -20,7 +20,8 @@ struct MapTabViewModelTests {
             )
         ]
         let permission = FakeLocationPermissionService(initial: .authorized)
-        let viewModel = MapTabViewModel(places: places, permission: permission)
+        let location = FakeCurrentLocationProvider(coordinate: CLLocationCoordinate2D(latitude: 35, longitude: -111))
+        let viewModel = MapTabViewModel(places: places, permission: permission, currentLocation: location)
 
         await viewModel.reload(allowingNearMe: false)
 
@@ -42,22 +43,40 @@ struct MapTabViewModelTests {
             )
         ]
         let permission = FakeLocationPermissionService(initial: .authorized)
-        let viewModel = MapTabViewModel(places: places, permission: permission)
+        let location = FakeCurrentLocationProvider(coordinate: CLLocationCoordinate2D(latitude: 34.5, longitude: -112.25))
+        let viewModel = MapTabViewModel(places: places, permission: permission, currentLocation: location)
 
         await viewModel.refreshPermissionStatus()
         await viewModel.reload(allowingNearMe: true)
 
         #expect(viewModel.places.count == 1)
         #expect(places.summariesNearCalls.count == 1)
+        #expect(places.summariesNearCalls[0].coordinate.latitude == 34.5)
+        #expect(places.summariesNearCalls[0].coordinate.longitude == -112.25)
     }
 
     @Test func deniedPermissionExposed() async {
         let places = FakePlaceRepository()
         let permission = FakeLocationPermissionService(initial: .denied)
-        let viewModel = MapTabViewModel(places: places, permission: permission)
+        let location = FakeCurrentLocationProvider(coordinate: nil)
+        let viewModel = MapTabViewModel(places: places, permission: permission, currentLocation: location)
 
         await viewModel.refreshPermissionStatus()
 
         #expect(viewModel.permissionStatus == .denied)
+    }
+
+    @Test func authorizedNearMeExposesUnavailableLocation() async {
+        let places = FakePlaceRepository()
+        let permission = FakeLocationPermissionService(initial: .authorized)
+        let location = FakeCurrentLocationProvider(coordinate: nil)
+        let viewModel = MapTabViewModel(places: places, permission: permission, currentLocation: location)
+
+        await viewModel.refreshPermissionStatus()
+        await viewModel.reload(allowingNearMe: true)
+
+        #expect(viewModel.currentLocationUnavailable)
+        #expect(viewModel.places.isEmpty)
+        #expect(places.summariesNearCalls.isEmpty)
     }
 }

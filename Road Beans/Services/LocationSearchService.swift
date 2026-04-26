@@ -31,27 +31,27 @@ final class SystemLocationSearchService: LocationSearchService, @unchecked Senda
     }
 
     private static func toDraft(_ item: MKMapItem) -> MapKitPlaceDraft {
-        let placemark = item.placemark
-        let addressParts = [placemark.thoroughfare, placemark.locality, placemark.administrativeArea]
-            .compactMap { $0 }
-        let address = addressParts.isEmpty ? nil : addressParts.joined(separator: ", ")
+        let location = item.location
+        let address = item.address?.shortAddress
+            ?? item.address?.fullAddress
+            ?? item.addressRepresentations?.fullAddress(includingRegion: false, singleLine: true)
 
         return MapKitPlaceDraft(
-            name: item.name ?? placemark.name ?? "Place",
+            name: item.name ?? "Place",
             kind: inferKind(from: item.pointOfInterestCategory),
             mapKitIdentifier: item.identifier?.rawValue,
             mapKitName: item.name,
             address: address,
-            latitude: placemark.coordinate.latitude,
-            longitude: placemark.coordinate.longitude,
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude,
             phoneNumber: item.phoneNumber,
             websiteURL: item.url,
-            streetNumber: placemark.subThoroughfare,
-            streetName: placemark.thoroughfare,
-            city: placemark.locality,
-            region: placemark.administrativeArea,
-            postalCode: placemark.postalCode,
-            country: placemark.country
+            streetNumber: nil,
+            streetName: nil,
+            city: item.addressRepresentations?.cityName,
+            region: nil,
+            postalCode: nil,
+            country: item.addressRepresentations?.regionName
         )
     }
 

@@ -57,8 +57,8 @@ final class SystemLocationPermissionService: NSObject, LocationPermissionService
 
 final class FakeLocationPermissionService: LocationPermissionService, @unchecked Sendable {
     private let lock = NSLock()
-    private var current: LocationAuthorization
-    private var continuations: [UUID: AsyncStream<LocationAuthorization>.Continuation] = [:]
+    nonisolated(unsafe) private var current: LocationAuthorization
+    nonisolated(unsafe) private var continuations: [UUID: AsyncStream<LocationAuthorization>.Continuation] = [:]
 
     init(initial: LocationAuthorization) {
         current = initial

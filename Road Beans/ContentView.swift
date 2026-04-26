@@ -37,6 +37,7 @@ struct ContentView: View {
         .environment(\.tombstoneRepository, tombstones)
         .environment(\.locationSearchService, FakeLocationSearchService(canned: []))
         .environment(\.locationPermissionService, FakeLocationPermissionService(initial: .denied))
+        .environment(\.currentLocationProvider, FakeCurrentLocationProvider(coordinate: nil))
         .environment(\.photoProcessingService, photoProcessing)
         .environment(\.iCloudAvailability, icloud)
         .environment(\.remoteSyncCoordinator, sync)

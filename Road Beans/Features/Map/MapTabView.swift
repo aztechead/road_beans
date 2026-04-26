@@ -5,6 +5,7 @@ import UIKit
 struct MapTabView: View {
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.locationPermissionService) private var permissionService
+    @Environment(\.currentLocationProvider) private var currentLocationProvider
     @State private var viewModel: MapTabViewModel?
     @State private var selectedPlace: PlaceSummary?
 
@@ -21,7 +22,11 @@ struct MapTabView: View {
         }
         .task {
             guard viewModel == nil else { return }
-            let model = MapTabViewModel(places: placeRepository, permission: permissionService)
+            let model = MapTabViewModel(
+                places: placeRepository,
+                permission: permissionService,
+                currentLocation: currentLocationProvider
+            )
             viewModel = model
             await model.refreshPermissionStatus()
             await model.reload(allowingNearMe: false)
@@ -55,6 +60,8 @@ struct MapTabView: View {
 
             if viewModel.nearMeOn && (viewModel.permissionStatus == .denied || viewModel.permissionStatus == .restricted) {
                 deniedRationale
+            } else if viewModel.currentLocationUnavailable {
+                currentLocationUnavailableState
             } else {
                 Map {
                     ForEach(viewModel.places) { place in
@@ -98,6 +105,15 @@ struct MapTabView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+        .padding()
+    }
+
+    private var currentLocationUnavailableState: some View {
+        ContentUnavailableView(
+            "Current Location Unavailable",
+            systemImage: "location.slash",
+            description: Text("Road Beans could not get your current location. Check Location Services and try again.")
+        )
         .padding()
     }
 
