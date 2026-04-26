@@ -300,6 +300,8 @@ xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'pl
 
 ## Task 10: Add Lightweight UI Smoke Tests or Screenshot QA Harness
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Catch broken navigation and blank screens before manual testing.
 
 **Files:**
