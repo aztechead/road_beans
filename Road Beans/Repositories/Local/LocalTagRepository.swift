@@ -62,4 +62,24 @@ final class LocalTagRepository: TagRepository {
             TagSuggestion(id: $0.id, name: $0.name, usageCount: $0.usageCount)
         }
     }
+
+    func seedDefaultsIfNeeded(defaults: UserDefaults = .standard) {
+        let key = "hasSeededDefaultTags"
+        guard !defaults.bool(forKey: key) else { return }
+        let names = ["trailer parking", "good food options", "remote work friendly"]
+        for name in names {
+            let normalized = Self.normalize(name)
+            let predicate = #Predicate<Tag> { $0.name == normalized }
+            var descriptor = FetchDescriptor<Tag>(predicate: predicate)
+            descriptor.fetchLimit = 1
+            if let existing = try? context.fetch(descriptor), !existing.isEmpty { continue }
+            let tag = Tag()
+            tag.name = normalized
+            tag.lastModifiedAt = Date.now
+            context.insert(tag)
+        }
+        if (try? context.save()) != nil {
+            defaults.set(true, forKey: key)
+        }
+    }
 }

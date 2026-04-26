@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 import Testing
 @testable import Road_Beans
@@ -86,5 +87,33 @@ struct LocalTagRepositoryTests {
 
         let calls = await sync.recordedCalls
         #expect(calls == [.init(kind: .tag, id: id)])
+    }
+
+    @Test func seedDefaultsCreatesExpectedTags() async throws {
+        let (repo, _, _) = try makeRepo()
+        let testDefaults = UserDefaults(suiteName: "test-seed-\(UUID().uuidString)")!
+
+        repo.seedDefaultsIfNeeded(defaults: testDefaults)
+
+        let all = try await repo.all()
+        let names = all.map(\.name)
+        #expect(names.contains("trailer parking"))
+        #expect(names.contains("good food options"))
+        #expect(names.contains("remote work friendly"))
+        #expect(testDefaults.bool(forKey: "hasSeededDefaultTags") == true)
+    }
+
+    @Test func seedDefaultsIsIdempotent() async throws {
+        let (repo, _, _) = try makeRepo()
+        let testDefaults = UserDefaults(suiteName: "test-seed-idempotent-\(UUID().uuidString)")!
+
+        repo.seedDefaultsIfNeeded(defaults: testDefaults)
+        repo.seedDefaultsIfNeeded(defaults: testDefaults)
+
+        let all = try await repo.all()
+        #expect(all.count == 3)
+        #expect(all.filter { $0.name == "trailer parking" }.count == 1)
+        #expect(all.filter { $0.name == "good food options" }.count == 1)
+        #expect(all.filter { $0.name == "remote work friendly" }.count == 1)
     }
 }
