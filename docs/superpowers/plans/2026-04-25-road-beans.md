@@ -5880,15 +5880,17 @@ git commit -m "feat: AddVisit paged flow with save + toast overlay"
 
 ### Task 29: List refresh on visit save/delete
 
-**Goal:** When a visit is added or deleted, PlaceList and PlaceDetail reload. Wired via the existing notifications.
+**Goal:** When a visit is added or deleted, PlaceList, PlaceDetail, and Map reload. Wired via the existing notifications.
 
 **Files:**
 - Modify: `Road Beans/Features/PlaceList/PlaceListView.swift`
 - Modify: `Road Beans/Features/PlaceDetail/PlaceDetailView.swift`
+- Modify: `Road Beans/Features/Map/MapTabView.swift`
 
 **Acceptance Criteria:**
 - [ ] PlaceList listens for `.roadBeansVisitSaved` and `.roadBeansVisitDeleted`; on receive, calls `vm.reload()`.
 - [ ] PlaceDetail listens for both; on receive, reloads its `vm.load(id:)`.
+- [ ] Map listens for both; on receive, reloads annotations while preserving the near-me toggle.
 - [ ] Manual: add a visit → list shows it; delete a visit → list updates.
 
 **Verify:** Manual on simulator: add and delete visits, see list update.

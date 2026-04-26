@@ -13,10 +13,18 @@ struct PlaceDetailView: View {
                 content(detail)
             } else {
                 ProgressView()
-                    .task { await ensureLoaded() }
             }
         }
         .navigationTitle("Place")
+        .task {
+            await ensureLoaded()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitSaved)) { _ in
+            Task { await ensureLoaded() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitDeleted)) { _ in
+            Task { await ensureLoaded() }
+        }
     }
 
     private func ensureLoaded() async {

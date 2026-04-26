@@ -22,6 +22,12 @@ struct PlaceListView: View {
             viewModel = model
             await model.reload()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitSaved)) { _ in
+            Task { await viewModel?.reload() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitDeleted)) { _ in
+            Task { await viewModel?.reload() }
+        }
     }
 
     private func content(_ viewModel: PlaceListViewModel) -> some View {
