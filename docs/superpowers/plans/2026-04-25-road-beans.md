@@ -2754,6 +2754,8 @@ git commit -m "feat: add PhotoRepository and TombstoneRepository"
 - Modify: `Road Beans/App/AppEnvironment.swift` — delete the `STUB_REPOSITORY_PROTOCOLS_NOT_YET_DEFINED` block.
 - Modify: `Road Beans.xcodeproj` — remove the `-DSTUB_REPOSITORY_PROTOCOLS_NOT_YET_DEFINED` swift flag.
 
+**Execution Note:** This task removes the temporary stub block, so it must run after Tasks 15 and 16 define the real `LocationPermissionService` and `LocationSearchService` protocols. Earlier plan drafts listed Task 14 immediately after Task 13, but that order would make `AppEnvironment.swift` fail to compile when the stubs are removed.
+
 **Acceptance Criteria:**
 - [ ] `VisitRepository` exposes: `save(_ command: CreateVisitCommand) async throws -> UUID`, `update(_ command: UpdateVisitCommand) async throws`, `delete(_ command: DeleteVisitCommand) async throws`, `recentRows(limit: Int) async throws -> [(VisitRow, placeName: String, placeKind: PlaceKind)]`, `detail(id: UUID) async throws -> VisitDetail?`.
 - [ ] Validation:
