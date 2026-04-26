@@ -30,6 +30,7 @@ struct PlaceDetailViewModelTests {
 
         await viewModel.load(id: id)
 
+        #expect(viewModel.state == .loaded)
         #expect(viewModel.detail?.name == "Loves")
     }
 
@@ -39,6 +40,18 @@ struct PlaceDetailViewModelTests {
 
         await viewModel.load(id: UUID())
 
+        #expect(viewModel.state == .empty)
+        #expect(viewModel.detail == nil)
+    }
+
+    @Test func repositoryFailureSetsFailedState() async {
+        let repository = FakePlaceRepository()
+        repository.detailError = FakeViewModelError.failed
+        let viewModel = PlaceDetailViewModel(placeRepo: repository)
+
+        await viewModel.load(id: UUID())
+
+        #expect(viewModel.state.errorMessage != nil)
         #expect(viewModel.detail == nil)
     }
 }

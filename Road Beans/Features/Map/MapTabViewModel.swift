@@ -13,6 +13,7 @@ final class MapTabViewModel {
     var currentLocationErrorMessage: String?
     var currentLocationUnavailable = false
     var mapCenter: MapCenter?
+    var state: ScreenState = .idle
 
     private let placeRepository: any PlaceRepository
     private let permission: any LocationPermissionService
@@ -44,6 +45,7 @@ final class MapTabViewModel {
     }
 
     func reload(allowingNearMe: Bool) async {
+        state = .loading
         do {
             if allowingNearMe, permissionStatus == .authorized {
                 isLoadingCurrentLocation = true
@@ -63,10 +65,14 @@ final class MapTabViewModel {
             }
             currentLocationUnavailable = false
             currentLocationErrorMessage = nil
+            state = places.isEmpty ? .empty : .loaded
         } catch {
             isLoadingCurrentLocation = false
             currentLocationUnavailable = allowingNearMe && permissionStatus == .authorized
             currentLocationErrorMessage = "Road Beans could not get your current location. Check Location Services and try again."
+            state = currentLocationUnavailable
+                ? .failed(currentLocationErrorMessage ?? "Current location is unavailable.")
+                : .failed("Road Beans could not load map stops. Try again.")
             places = []
         }
     }

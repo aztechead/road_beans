@@ -17,6 +17,7 @@ struct PlaceListViewModelTests {
         await viewModel.reload()
         viewModel.searchText = "lov"
 
+        #expect(viewModel.state == .loaded)
         #expect(viewModel.filteredPlaces.count == 1)
         #expect(viewModel.filteredPlaces.first?.name == "Loves")
     }
@@ -90,5 +91,28 @@ struct PlaceListViewModelTests {
 
         #expect(viewModel.searchText == "lov")
         #expect(viewModel.filteredPlaces.count == 1)
+    }
+
+    @Test func emptyRepositoriesSetEmptyState() async {
+        let viewModel = PlaceListViewModel(
+            places: FakePlaceRepository(),
+            visits: FakeVisitRepository()
+        )
+
+        await viewModel.reload()
+
+        #expect(viewModel.state == .empty)
+    }
+
+    @Test func repositoryFailureSetsFailedState() async {
+        let places = FakePlaceRepository()
+        places.summariesError = FakeViewModelError.failed
+        let viewModel = PlaceListViewModel(places: places, visits: FakeVisitRepository())
+
+        await viewModel.reload()
+
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.places.isEmpty)
+        #expect(viewModel.recentVisits.isEmpty)
     }
 }

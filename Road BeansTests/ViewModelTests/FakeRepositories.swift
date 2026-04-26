@@ -6,22 +6,27 @@ final class FakePlaceRepository: PlaceRepository, @unchecked Sendable {
     var stored: [PlaceSummary] = []
     var details: [UUID: PlaceDetail] = [:]
     var summariesNearCalls: [(coordinate: CLLocationCoordinate2D, radiusMeters: Double)] = []
+    var summariesError: Error?
+    var detailError: Error?
 
     func findOrCreate(reference: PlaceReference) async throws -> UUID {
         UUID()
     }
 
     func summaries() async throws -> [PlaceSummary] {
-        stored
+        if let summariesError { throw summariesError }
+        return stored
     }
 
     func summariesNear(coordinate: CLLocationCoordinate2D, radiusMeters: Double) async throws -> [PlaceSummary] {
+        if let summariesError { throw summariesError }
         summariesNearCalls.append((coordinate, radiusMeters))
         return stored
     }
 
     func detail(id: UUID) async throws -> PlaceDetail? {
-        details[id]
+        if let detailError { throw detailError }
+        return details[id]
     }
 }
 
@@ -30,6 +35,8 @@ final class FakeVisitRepository: VisitRepository, @unchecked Sendable {
     var details: [UUID: VisitDetail] = [:]
     var saved: [CreateVisitCommand] = []
     var deletedIDs: [UUID] = []
+    var recentsError: Error?
+    var detailError: Error?
 
     func save(_ command: CreateVisitCommand) async throws -> UUID {
         saved.append(command)
@@ -43,11 +50,13 @@ final class FakeVisitRepository: VisitRepository, @unchecked Sendable {
     }
 
     func recentRows(limit: Int) async throws -> [RecentVisitRow] {
-        Array(recents.prefix(limit))
+        if let recentsError { throw recentsError }
+        return Array(recents.prefix(limit))
     }
 
     func detail(id: UUID) async throws -> VisitDetail? {
-        details[id]
+        if let detailError { throw detailError }
+        return details[id]
     }
 }
 

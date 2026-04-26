@@ -11,7 +11,7 @@ struct PlaceListView: View {
                 if let viewModel {
                     content(viewModel)
                 } else {
-                    ProgressView()
+                    ProgressView("Loading stops...")
                 }
             }
             .navigationTitle("Stops")
@@ -43,27 +43,58 @@ struct PlaceListView: View {
             .padding(.horizontal)
             .padding(.top, 8)
 
-            List {
-                switch viewModel.mode {
-                case .byPlace:
-                    ForEach(viewModel.filteredPlaces) { place in
-                        NavigationLink(value: place.id) {
-                            placeRow(place)
+            Group {
+                switch viewModel.state {
+                case .loading, .idle:
+                    ProgressView("Loading stops...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .failed(let message):
+                    unavailableState(
+                        title: "Could not load stops",
+                        systemImage: "exclamationmark.triangle",
+                        message: message,
+                        retry: { await viewModel.reload() }
+                    )
+                case .empty:
+                    unavailableState(
+                        title: "No stops yet",
+                        systemImage: "cup.and.saucer",
+                        message: "Add your first stop to start building your road coffee log.",
+                        retry: nil
+                    )
+                case .loaded:
+                    if viewModel.isShowingEmptyResults {
+                        unavailableState(
+                            title: "No matches",
+                            systemImage: "magnifyingglass",
+                            message: "Try a different stop, drink, or tag.",
+                            retry: nil
+                        )
+                    } else {
+                        List {
+                            switch viewModel.mode {
+                            case .byPlace:
+                                ForEach(viewModel.filteredPlaces) { place in
+                                    NavigationLink(value: place.id) {
+                                        placeRow(place)
+                                    }
+                                }
+                            case .recentVisits:
+                                ForEach(viewModel.filteredVisits, id: \.visit.id) { row in
+                                    visitRow(row)
+                                }
+                            }
                         }
-                    }
-                case .recentVisits:
-                    ForEach(viewModel.filteredVisits, id: \.visit.id) { row in
-                        visitRow(row)
+                        .listStyle(.insetGrouped)
+                        .searchable(text: $viewModel.searchText, prompt: "Search stops, drinks, tags")
+                        .refreshable {
+                            await viewModel.reload()
+                        }
                     }
                 }
             }
-            .listStyle(.insetGrouped)
-            .searchable(text: $viewModel.searchText, prompt: "Search stops, drinks, tags")
             .navigationDestination(for: UUID.self) { placeID in
                 PlaceDetailView(placeID: placeID)
-            }
-            .refreshable {
-                await viewModel.reload()
             }
         }
     }
@@ -115,5 +146,29 @@ struct PlaceListView: View {
             }
         }
         .padding(.vertical, 6)
+    }
+
+    private func unavailableState(
+        title: String,
+        systemImage: String,
+        message: String,
+        retry: (() async -> Void)?
+    ) -> some View {
+        VStack(spacing: 16) {
+            ContentUnavailableView(
+                title,
+                systemImage: systemImage,
+                description: Text(message)
+            )
+
+            if let retry {
+                Button("Try Again") {
+                    Task { await retry() }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 }

@@ -5,6 +5,7 @@ import Observation
 @MainActor
 final class VisitDetailViewModel {
     var detail: VisitDetail?
+    var state: ScreenState = .idle
 
     private let visits: any VisitRepository
     let visitID: UUID
@@ -15,7 +16,14 @@ final class VisitDetailViewModel {
     }
 
     func load() async {
-        detail = try? await visits.detail(id: visitID)
+        state = .loading
+        do {
+            detail = try await visits.detail(id: visitID)
+            state = detail == nil ? .empty : .loaded
+        } catch {
+            detail = nil
+            state = .failed("Road Beans could not load this visit. Try again.")
+        }
     }
 
     func delete() async throws {

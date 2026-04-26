@@ -5,6 +5,7 @@ import Observation
 @MainActor
 final class PlaceDetailViewModel {
     var detail: PlaceDetail?
+    var state: ScreenState = .idle
 
     private let placeRepository: any PlaceRepository
 
@@ -13,6 +14,13 @@ final class PlaceDetailViewModel {
     }
 
     func load(id: UUID) async {
-        detail = try? await placeRepository.detail(id: id)
+        state = .loading
+        do {
+            detail = try await placeRepository.detail(id: id)
+            state = detail == nil ? .empty : .loaded
+        } catch {
+            detail = nil
+            state = .failed("Road Beans could not load this stop. Try again.")
+        }
     }
 }

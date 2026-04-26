@@ -10,14 +10,27 @@ struct VisitDetailView: View {
 
     var body: some View {
         Group {
-            if let detail = viewModel?.detail {
-                content(detail)
+            if let viewModel {
+                switch viewModel.state {
+                case .idle, .loading:
+                    ProgressView("Loading visit...")
+                case .loaded:
+                    if let detail = viewModel.detail {
+                        content(detail)
+                    } else {
+                        missingVisitState
+                    }
+                case .empty:
+                    missingVisitState
+                case .failed(let message):
+                    failedState(message)
+                }
             } else {
-                ProgressView()
-                    .task { await ensureLoaded() }
+                ProgressView("Loading visit...")
             }
         }
         .navigationTitle("Visit")
+        .task { await ensureLoaded() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
@@ -43,6 +56,31 @@ struct VisitDetailView: View {
             viewModel = VisitDetailViewModel(visits: visitsRepository, visitID: visitID)
         }
         await viewModel?.load()
+    }
+
+    private var missingVisitState: some View {
+        ContentUnavailableView(
+            "Visit not found",
+            systemImage: "cup.and.saucer",
+            description: Text("This visit may have been deleted.")
+        )
+        .padding()
+    }
+
+    private func failedState(_ message: String) -> some View {
+        VStack(spacing: 16) {
+            ContentUnavailableView(
+                "Could not load visit",
+                systemImage: "exclamationmark.triangle",
+                description: Text(message)
+            )
+
+            Button("Try Again") {
+                Task { await ensureLoaded() }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
     }
 
     private func content(_ detail: VisitDetail) -> some View {

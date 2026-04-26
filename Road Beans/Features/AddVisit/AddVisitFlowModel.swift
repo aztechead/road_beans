@@ -14,6 +14,7 @@ final class AddVisitFlowModel {
 
     var searchText: String = ""
     var searchResults: [MapKitPlaceDraft] = []
+    var searchState: ScreenState = .idle
 
     let visits: any VisitRepository
     let tagsRepo: any TagRepository
@@ -40,18 +41,30 @@ final class AddVisitFlowModel {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
             searchResults = []
+            searchState = .idle
             return
         }
 
+        searchState = .loading
         searchTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard !Task.isCancelled, let self else { return }
 
-            let results = (try? await self.searchService.search(query: query, near: nil)) ?? []
-            guard !Task.isCancelled else { return }
+            do {
+                let results = try await self.searchService.search(query: query, near: nil)
+                guard !Task.isCancelled else { return }
 
-            await MainActor.run {
-                self.searchResults = results
+                await MainActor.run {
+                    self.searchResults = results
+                    self.searchState = results.isEmpty ? .empty : .loaded
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.searchResults = []
+                    self.searchState = .failed("Road Beans could not search places. Check your connection and try again.")
+                }
             }
         }
     }

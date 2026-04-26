@@ -22,7 +22,29 @@ struct VisitDetailViewModelTests {
 
         await viewModel.load()
 
+        #expect(viewModel.state == .loaded)
         #expect(viewModel.detail?.id == id)
+    }
+
+    @Test func missingVisitSetsEmptyState() async {
+        let visits = FakeVisitRepository()
+        let viewModel = VisitDetailViewModel(visits: visits, visitID: UUID())
+
+        await viewModel.load()
+
+        #expect(viewModel.state == .empty)
+        #expect(viewModel.detail == nil)
+    }
+
+    @Test func repositoryFailureSetsFailedState() async {
+        let visits = FakeVisitRepository()
+        visits.detailError = FakeViewModelError.failed
+        let viewModel = VisitDetailViewModel(visits: visits, visitID: UUID())
+
+        await viewModel.load()
+
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.detail == nil)
     }
 
     @Test func deleteCallsRepository() async throws {

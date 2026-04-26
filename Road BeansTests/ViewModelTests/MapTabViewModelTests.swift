@@ -25,6 +25,7 @@ struct MapTabViewModelTests {
 
         await viewModel.reload(allowingNearMe: false)
 
+        #expect(viewModel.state == .loaded)
         #expect(viewModel.places.count == 1)
         #expect(places.summariesNearCalls.isEmpty)
         #expect(viewModel.mapCenter == nil)
@@ -56,6 +57,7 @@ struct MapTabViewModelTests {
         #expect(places.summariesNearCalls[0].coordinate.longitude == -112.25)
         #expect(viewModel.currentLocationUnavailable == false)
         #expect(viewModel.isLoadingCurrentLocation == false)
+        #expect(viewModel.state == .loaded)
         #expect(viewModel.mapCenter?.latitude == 34.5)
         #expect(viewModel.mapCenter?.longitude == -112.25)
     }
@@ -85,6 +87,7 @@ struct MapTabViewModelTests {
         #expect(places.summariesNearCalls.isEmpty)
         #expect(viewModel.currentLocationErrorMessage != nil)
         #expect(viewModel.isLoadingCurrentLocation == false)
+        #expect(viewModel.state.errorMessage != nil)
     }
 
     @Test func retryNearMeReloadsAfterUnavailableLocation() async {
@@ -129,5 +132,17 @@ struct MapTabViewModelTests {
 
         #expect(viewModel.mapCenter == MapCenter(snapshot))
         #expect(viewModel.currentLocation == snapshot)
+    }
+
+    @Test func emptyMapSetsEmptyState() async {
+        let places = FakePlaceRepository()
+        let permission = FakeLocationPermissionService(initial: .authorized)
+        let location = FakeCurrentLocationProvider(coordinate: CLLocationCoordinate2D(latitude: 34.5, longitude: -112.25))
+        let viewModel = MapTabViewModel(places: places, permission: permission, currentLocation: location)
+
+        await viewModel.refreshPermissionStatus()
+        await viewModel.reload(allowingNearMe: true)
+
+        #expect(viewModel.state == .empty)
     }
 }

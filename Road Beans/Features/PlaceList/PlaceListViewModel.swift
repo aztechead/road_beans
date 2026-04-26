@@ -15,6 +15,7 @@ final class PlaceListViewModel {
     var searchText = ""
     var places: [PlaceSummary] = []
     var recentVisits: [RecentVisitRow] = []
+    var state: ScreenState = .idle
 
     private let placeRepository: any PlaceRepository
     private let visitRepository: any VisitRepository
@@ -25,14 +26,17 @@ final class PlaceListViewModel {
     }
 
     func reload() async {
+        state = .loading
         do {
             async let loadedPlaces = placeRepository.summaries()
             async let loadedVisits = visitRepository.recentRows(limit: 200)
             places = try await loadedPlaces
             recentVisits = try await loadedVisits
+            state = places.isEmpty && recentVisits.isEmpty ? .empty : .loaded
         } catch {
             places = []
             recentVisits = []
+            state = .failed("Road Beans could not load your stops. Pull to retry.")
         }
     }
 
@@ -55,5 +59,14 @@ final class PlaceListViewModel {
 
     private var normalizedSearchText: String {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var isShowingEmptyResults: Bool {
+        switch mode {
+        case .byPlace:
+            filteredPlaces.isEmpty
+        case .recentVisits:
+            filteredVisits.isEmpty
+        }
     }
 }

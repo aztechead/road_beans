@@ -80,14 +80,17 @@ final class SystemLocationSearchService: LocationSearchService, @unchecked Senda
 
 final class FakeLocationSearchService: LocationSearchService, @unchecked Sendable {
     private let canned: [MapKitPlaceDraft]
+    private let error: Error?
 
-    init(canned: [MapKitPlaceDraft]) {
+    init(canned: [MapKitPlaceDraft], error: Error? = nil) {
         self.canned = canned
+        self.error = error
     }
 
     func search(query: String, near: CLLocationCoordinate2D?) async throws -> [MapKitPlaceDraft] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw LocationSearchError.empty }
+        if let error { throw error }
         return canned
     }
 }

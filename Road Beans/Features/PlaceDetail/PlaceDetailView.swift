@@ -9,10 +9,23 @@ struct PlaceDetailView: View {
 
     var body: some View {
         Group {
-            if let detail = viewModel?.detail {
-                content(detail)
+            if let viewModel {
+                switch viewModel.state {
+                case .idle, .loading:
+                    ProgressView("Loading stop...")
+                case .loaded:
+                    if let detail = viewModel.detail {
+                        content(detail)
+                    } else {
+                        missingPlaceState
+                    }
+                case .empty:
+                    missingPlaceState
+                case .failed(let message):
+                    failedState(message)
+                }
             } else {
-                ProgressView()
+                ProgressView("Loading stop...")
             }
         }
         .navigationTitle("Place")
@@ -32,6 +45,31 @@ struct PlaceDetailView: View {
             viewModel = PlaceDetailViewModel(placeRepo: placeRepository)
         }
         await viewModel?.load(id: placeID)
+    }
+
+    private var missingPlaceState: some View {
+        ContentUnavailableView(
+            "Stop not found",
+            systemImage: "mappin.slash",
+            description: Text("This stop may have been deleted.")
+        )
+        .padding()
+    }
+
+    private func failedState(_ message: String) -> some View {
+        VStack(spacing: 16) {
+            ContentUnavailableView(
+                "Could not load stop",
+                systemImage: "exclamationmark.triangle",
+                description: Text(message)
+            )
+
+            Button("Try Again") {
+                Task { await ensureLoaded() }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
     }
 
     private func content(_ detail: PlaceDetail) -> some View {

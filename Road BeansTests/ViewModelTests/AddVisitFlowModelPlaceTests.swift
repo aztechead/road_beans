@@ -55,4 +55,31 @@ struct AddVisitFlowModelPlaceTests {
         }
         #expect(model.currentPage == 1)
     }
+
+    @Test func searchEmptyResultSetsEmptyState() async throws {
+        let model = makeModel()
+
+        model.searchText = "nothing"
+        model.search()
+        try await Task.sleep(nanoseconds: 350_000_000)
+
+        #expect(model.searchState == .empty)
+        #expect(model.searchResults.isEmpty)
+    }
+
+    @Test func searchFailureSetsFailedState() async throws {
+        let model = AddVisitFlowModel(
+            visits: FakeVisitRepository(),
+            tags: FakeTagRepository(),
+            search: FakeLocationSearchService(canned: [], error: FakeViewModelError.failed),
+            photoProcessor: DefaultPhotoProcessingService()
+        )
+
+        model.searchText = "coffee"
+        model.search()
+        try await Task.sleep(nanoseconds: 350_000_000)
+
+        #expect(model.searchState.errorMessage != nil)
+        #expect(model.searchResults.isEmpty)
+    }
 }

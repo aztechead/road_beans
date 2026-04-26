@@ -8,7 +8,13 @@ struct AddVisitPlacePage: View {
         VStack(spacing: 0) {
             searchField
 
-            if model.searchResults.isEmpty && !model.searchText.isEmpty {
+            if model.searchState == .loading {
+                ProgressView("Searching places...")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            } else if let message = model.searchState.errorMessage {
+                failedSearchState(message)
+            } else if model.searchResults.isEmpty && !model.searchText.isEmpty {
                 emptySearchState
             } else {
                 searchResultsList
@@ -48,6 +54,20 @@ struct AddVisitPlacePage: View {
 
             Button("+ Add as custom place") {
                 showingCustomPlace = true
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+    }
+
+    private func failedSearchState(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Text(message)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Try Again") {
+                model.search()
             }
         }
         .frame(maxWidth: .infinity)

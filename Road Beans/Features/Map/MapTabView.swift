@@ -65,6 +65,13 @@ struct MapTabView: View {
                 deniedRationale
             } else if viewModel.currentLocationUnavailable {
                 currentLocationUnavailableState(viewModel)
+            } else if viewModel.state == .empty {
+                ContentUnavailableView(
+                    "No stops on the map yet",
+                    systemImage: "map",
+                    description: Text("Add your first stop to see it here.")
+                )
+                .padding()
             } else {
                 Map(position: $mapPosition) {
                     if viewModel.currentLocation != nil {
