@@ -200,6 +200,8 @@ xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'pl
 
 ## Task 6: Add First-Run Onboarding and Permission Priming
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Explain what Road Beans does, when location is used, and why iCloud may be requested before system prompts appear.
 
 **Files:**

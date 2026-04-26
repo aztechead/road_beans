@@ -2,8 +2,16 @@ import SwiftData
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage(OnboardingState.storageKey) private var hasCompletedOnboarding = false
+
     var body: some View {
-        RootView()
+        if hasCompletedOnboarding {
+            RootView()
+        } else {
+            OnboardingView {
+                hasCompletedOnboarding = true
+            }
+        }
     }
 }
 
