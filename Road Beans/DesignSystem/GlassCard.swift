@@ -5,19 +5,20 @@ private struct GlassCardModifier: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: RoadBeansTheme.Radius.card, style: .continuous)
 
         if reduceTransparency {
             content
-                .padding(12)
+                .padding(RoadBeansTheme.Spacing.md)
                 .background((tint ?? Color(UIColor.secondarySystemBackground)).opacity(0.95), in: shape)
         } else {
             content
-                .padding(12)
+                .padding(RoadBeansTheme.Spacing.md)
                 .background(.thinMaterial, in: shape)
                 .overlay(
                     shape.strokeBorder((tint ?? .white).opacity(0.18), lineWidth: 0.5)
                 )
+                .shadow(color: RoadBeansTheme.Shadow.card, radius: 14, y: 6)
         }
     }
 }

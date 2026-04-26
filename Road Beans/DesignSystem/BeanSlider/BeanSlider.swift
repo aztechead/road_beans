@@ -13,7 +13,7 @@ struct BeanSlider: View {
     @State private var glyphPulse = false
 
     private let trackHeight: CGFloat = 14
-    private let thumbDiameter: CGFloat = 44
+    private let thumbDiameter: CGFloat = 52
 
     var body: some View {
         GeometryReader { geometry in
@@ -38,10 +38,11 @@ struct BeanSlider: View {
             .gesture(dragGesture(width: width))
             .accessibilityElement()
             .accessibilityLabel("Drink rating")
+            .accessibilityHint("Swipe up or down to adjust by one tenth of a bean.")
             .accessibilityValue(BeanSliderModel.accessibilityValueText(value))
             .accessibilityAdjustableAction(adjustAccessibilityValue)
         }
-        .frame(height: 80)
+        .frame(height: 88)
     }
 
     private var normalizedProgress: Double {
@@ -53,31 +54,33 @@ struct BeanSlider: View {
         Capsule()
             .fill(
                 LinearGradient(
-                    colors: [Color.blue.opacity(0.5), Color.brown.opacity(0.72)],
+                    colors: [.beanTrail.opacity(0.72), .beanCream.opacity(0.82), .beanRoast.opacity(0.78)],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
             )
             .frame(height: trackHeight)
+            .overlay(Capsule().strokeBorder(Color.beanInk.opacity(0.16), lineWidth: 1))
             .accessibilityHidden(true)
     }
 
     private var thumb: some View {
         ZStack {
             Circle()
-                .fill(reduceTransparency ? Color.brown.opacity(0.92) : Color.clear)
+                .fill(reduceTransparency ? Color.beanRoast.opacity(0.92) : Color.clear)
                 .background {
                     if !reduceTransparency {
                         Circle().fill(.thinMaterial)
                     }
                 }
+                .overlay(Circle().strokeBorder(Color.beanCream.opacity(0.7), lineWidth: 1))
 
             Text(String(format: "%.1f", value))
                 .font(.roadBeansNumeric)
                 .foregroundStyle(.primary)
         }
         .frame(width: thumbDiameter, height: thumbDiameter)
-        .shadow(color: Color.black.opacity(0.18), radius: 4, y: 2)
+        .shadow(color: RoadBeansTheme.Shadow.marker, radius: 6, y: 3)
     }
 
     private func dragGesture(width: CGFloat) -> some Gesture {

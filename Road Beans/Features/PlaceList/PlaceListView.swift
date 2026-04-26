@@ -93,6 +93,7 @@ struct PlaceListView: View {
                             }
                         }
                         .listStyle(.insetGrouped)
+                        .scrollContentBackground(.hidden)
                         .searchable(text: $viewModel.searchText, prompt: "Search stops, drinks, tags")
                         .refreshable {
                             await viewModel.reload()
@@ -104,6 +105,7 @@ struct PlaceListView: View {
                 PlaceDetailView(placeID: placeID)
             }
         }
+        .roadBeansScreenBackground()
     }
 
     private func filterBar(_ viewModel: PlaceListViewModel) -> some View {
@@ -190,7 +192,7 @@ struct PlaceListView: View {
 
     private func filterChip(title: String, systemImage: String) -> some View {
         Label(title, systemImage: systemImage)
-            .font(.caption.weight(.semibold))
+            .font(.roadBeansCaption)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .background(Color.secondary.opacity(0.14), in: Capsule())

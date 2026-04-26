@@ -100,18 +100,19 @@ struct VisitDetailView: View {
 
     private func content(_ detail: VisitDetail) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.md) {
                 header(detail)
                 photoPager(detail.photos)
                 tags(detail.tagNames)
                 drinks(detail.drinks)
             }
-            .padding()
+            .padding(RoadBeansTheme.Spacing.md)
         }
+        .roadBeansScreenBackground()
     }
 
     private func header(_ detail: VisitDetail) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
             Text(detail.date.formatted(date: .complete, time: .shortened))
                 .font(.roadBeansHeadline)
 
@@ -156,7 +157,7 @@ struct VisitDetailView: View {
     }
 
     private func drinks(_ drinks: [DrinkRow]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
             Text("Drinks")
                 .font(.roadBeansHeadline)
 
@@ -198,7 +199,7 @@ private struct FlowTags: View {
         HStack {
             ForEach(tags, id: \.self) { tag in
                 Text(tag)
-                    .font(.caption)
+                    .font(.roadBeansCaption)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.secondary.opacity(0.18), in: Capsule())

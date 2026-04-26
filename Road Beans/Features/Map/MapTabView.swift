@@ -89,10 +89,7 @@ struct MapTabView: View {
                                 Button {
                                     selectedPlace = place
                                 } label: {
-                                    Image(systemName: place.kind.sfSymbol)
-                                        .padding(8)
-                                        .background(place.kind.accentColor, in: Circle())
-                                        .foregroundStyle(.white)
+                                    PlaceKindStyle.mapMarker(for: place.kind, rating: place.averageRating)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -116,6 +113,7 @@ struct MapTabView: View {
                 }
             }
         }
+        .roadBeansScreenBackground()
         .sheet(item: $selectedPlace) { place in
             placeSheet(place)
         }

@@ -94,17 +94,18 @@ struct PlaceDetailView: View {
 
     private func content(_ detail: PlaceDetail) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.md) {
                 header(detail)
                 averageBlock(detail)
                 visitsList(detail)
             }
-            .padding()
+            .padding(RoadBeansTheme.Spacing.md)
         }
+        .roadBeansScreenBackground()
     }
 
     private func header(_ detail: PlaceDetail) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: detail.kind.sfSymbol)
                     .font(.largeTitle)
@@ -169,7 +170,7 @@ struct PlaceDetailView: View {
     }
 
     private func visitCard(_ visit: VisitRow) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
             Button {
                 toggleVisitExpansion(visit.id)
             } label: {
@@ -209,7 +210,6 @@ struct PlaceDetailView: View {
                 .foregroundStyle(.secondary)
             }
         }
-        .padding(12)
         .glassCard()
     }
 
