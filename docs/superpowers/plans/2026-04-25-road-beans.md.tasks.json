@@ -234,7 +234,7 @@
     {
       "id": 24,
       "subject": "Task 24: MapTabView with Stops near me",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         20,
         15
@@ -304,5 +304,5 @@
       "description": "**Goal:** Final pass. Dynamic Type, dark mode, sign-out/sign-in iCloud QA, document checklist for future TestFlight builds.\n\n```json:metadata\n{\"files\":[\"docs/superpowers/qa/2026-04-25-manual-qa-checklist.md\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' build test\",\"acceptanceCriteria\":[\"Smoke flow passes\",\"Dark mode + Dynamic Type ok\",\"Haptics + Reduce Motion gates\",\"iCloud sign-out/sign-in flows\",\"QA checklist documented\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-04-26T13:52:27Z"
+  "lastUpdated": "2026-04-26T13:54:36Z"
 }
