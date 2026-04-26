@@ -46,6 +46,10 @@ struct PlaceListView: View {
             .padding(.horizontal)
             .padding(.top, 8)
 
+            filterBar(viewModel)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+
             Group {
                 switch viewModel.state {
                 case .loading, .idle:
@@ -100,6 +104,96 @@ struct PlaceListView: View {
                 PlaceDetailView(placeID: placeID)
             }
         }
+    }
+
+    private func filterBar(_ viewModel: PlaceListViewModel) -> some View {
+        @Bindable var viewModel = viewModel
+
+        return VStack(alignment: .leading, spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    Menu {
+                        Button("Any Kind") {
+                            viewModel.selectedKind = nil
+                        }
+
+                        Divider()
+
+                        ForEach(PlaceKind.allCases, id: \.self) { kind in
+                            Button(kind.displayName) {
+                                viewModel.selectedKind = kind
+                            }
+                        }
+                    } label: {
+                        filterChip(
+                            title: viewModel.selectedKind?.displayName ?? "Any Kind",
+                            systemImage: viewModel.selectedKind?.sfSymbol ?? "line.3.horizontal.decrease.circle"
+                        )
+                    }
+
+                    Menu {
+                        ForEach(PlaceRatingFilter.allCases) { filter in
+                            Button(filter.rawValue) {
+                                viewModel.ratingFilter = filter
+                            }
+                        }
+                    } label: {
+                        filterChip(title: viewModel.ratingFilter.rawValue, systemImage: "star.fill")
+                    }
+
+                    Menu {
+                        Toggle("Use Date Range", isOn: $viewModel.isDateFilterEnabled)
+
+                        DatePicker("From", selection: $viewModel.startDate, displayedComponents: .date)
+                            .disabled(!viewModel.isDateFilterEnabled)
+
+                        DatePicker("To", selection: $viewModel.endDate, displayedComponents: .date)
+                            .disabled(!viewModel.isDateFilterEnabled)
+                    } label: {
+                        filterChip(
+                            title: viewModel.isDateFilterEnabled ? "Date Range" : "Any Date",
+                            systemImage: "calendar"
+                        )
+                    }
+
+                    if !viewModel.availableTags.isEmpty {
+                        Menu {
+                            ForEach(viewModel.availableTags, id: \.self) { tag in
+                                Button {
+                                    viewModel.toggleTag(tag)
+                                } label: {
+                                    Label(
+                                        tag,
+                                        systemImage: viewModel.selectedTags.contains(tag) ? "checkmark.circle.fill" : "circle"
+                                    )
+                                }
+                            }
+                        } label: {
+                            filterChip(
+                                title: viewModel.selectedTags.isEmpty ? "Any Tag" : "\(viewModel.selectedTags.count) Tag\(viewModel.selectedTags.count == 1 ? "" : "s")",
+                                systemImage: "tag.fill"
+                            )
+                        }
+                    }
+
+                    if viewModel.activeFilterCount > 0 {
+                        Button("Clear") {
+                            viewModel.clearFilters()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    private func filterChip(title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(Color.secondary.opacity(0.14), in: Capsule())
     }
 
     private func placeRow(_ place: PlaceSummary) -> some View {

@@ -251,6 +251,8 @@ xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'pl
 
 ## Task 8: Improve Search and Filtering
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Make list search useful for real road-trip recall.
 
 **Files:**
