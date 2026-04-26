@@ -21,6 +21,10 @@ struct RootView: View {
                 tabs
             }
         }
+        .onOpenURL { url in
+            guard let route = AppRoute(url: url) else { return }
+            handle(route)
+        }
     }
 
     private var tabs: some View {
@@ -49,6 +53,20 @@ struct RootView: View {
 
             RootToastOverlay()
                 .allowsHitTesting(false)
+        }
+    }
+
+    private func handle(_ route: AppRoute) {
+        switch route {
+        case .addVisit:
+            selectedTab = .list
+            isShowingAddVisit = true
+        case .recentVisits:
+            selectedTab = .list
+            isShowingAddVisit = false
+        case .map:
+            selectedTab = .map
+            isShowingAddVisit = false
         }
     }
 }

@@ -102,6 +102,8 @@ xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'ge
 
 ## Task 3: Replace the AppIntents Metadata Warning With Useful App Intents
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Add a small real AppIntents surface so Xcode’s AppIntents metadata step is meaningful and the warning is removed for the right reason.
 
 **Rationale:** The current warning says metadata extraction was skipped because there is no AppIntents dependency. Suppressing the build phase would hide the warning, but Road Beans has useful shortcuts candidates. The better fix is to add AppIntents intentionally.
