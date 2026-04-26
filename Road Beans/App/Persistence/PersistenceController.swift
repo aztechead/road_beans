@@ -15,6 +15,7 @@ final class PersistenceController {
         icloud: iCloudAvailabilityServiceProtocol,
         migrationDeferred: Bool? = nil,
         localStoreExists: Bool? = nil,
+        forceLocalOnly: Bool = false,
         useInMemoryStores: Bool = false,
         defaults: UserDefaults = .standard
     ) {
@@ -25,7 +26,9 @@ final class PersistenceController {
         let hasICloudToken = icloud.currentToken() != nil
 
         let resolvedMode: PersistenceMode
-        if !hasICloudToken {
+        if forceLocalOnly {
+            resolvedMode = .localOnly
+        } else if !hasICloudToken {
             resolvedMode = .localOnly
         } else if hasLocalStore && !deferredFlag {
             resolvedMode = .pendingMigration

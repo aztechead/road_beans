@@ -28,6 +28,8 @@
 
 ## Task 1: Add Explicit Local-Device Capability Mode
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Make the app installable on a personal-team iPhone without disabling core local functionality. Keep CloudKit/Push-capable configuration available for a paid Developer Program team.
 
 **Rationale:** Current physical-device builds fail because a personal team cannot provision iCloud and Push capabilities for bundle `brainmeld.Road-Beans`. This is not an app compiler problem; it is a signing/capability mode problem.

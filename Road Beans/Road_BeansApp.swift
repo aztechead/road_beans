@@ -20,7 +20,10 @@ struct Road_BeansApp: App {
     @MainActor
     init() {
         let icloud = SystemICloudAvailabilityService()
-        let persistence = PersistenceController(icloud: icloud)
+        let persistence = PersistenceController(
+            icloud: icloud,
+            forceLocalOnly: AppBuildConfiguration.forcesLocalPersistence
+        )
         let context = ModelContext(persistence.container)
         let sync = LocalOnlyRemoteSync()
         let photoProcessing = DefaultPhotoProcessingService()

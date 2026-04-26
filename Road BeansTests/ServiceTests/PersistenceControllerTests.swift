@@ -27,6 +27,18 @@ struct PersistenceControllerTests {
         #expect(controller.mode == .cloudKitBacked)
     }
 
+    @Test func forceLocalOnlyIgnoresICloudTokenAndLocalStore() {
+        let icloud = FakeICloudAvailabilityService(initialToken: "user1")
+        let controller = PersistenceController(
+            icloud: icloud,
+            migrationDeferred: false,
+            localStoreExists: true,
+            forceLocalOnly: true,
+            useInMemoryStores: true
+        )
+        #expect(controller.mode == .localOnly)
+    }
+
     @Test func resolvesPendingMigrationWhenTokenAndLocalExists() {
         let icloud = FakeICloudAvailabilityService(initialToken: "user1")
         let controller = PersistenceController(
