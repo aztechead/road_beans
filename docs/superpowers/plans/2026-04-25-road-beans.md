@@ -6033,7 +6033,7 @@ git commit -m "docs: add v1 manual QA checklist"
 
 ## Notes / Known v1 limitations carried forward
 
-- **Photo persistence in the create flow** is partial in Task 28: the create command carries `PhotoDraft`s, but the actual `PhotoRepository.insertProcessed` calls happen in v1.1 (or as a fast-follow within v1 polish). The DTOs, models, and repository interface for photos are complete; only the wiring from `AddVisitFlowModel.save()` → `PhotoProcessingService` → `PhotoRepository` for newly-created visits is deferred. This avoids re-architecting the create command to thread processed photos back through `VisitRepository` mid-task. See spec §7 for the eventual contract.
+- **Photo persistence in the create flow** is repository-owned: `CreateVisitCommand` carries `PhotoDraft`s, and `LocalVisitRepository.save` processes and inserts photos through `PhotoRepository`.
 - **`PersistenceController.migrateLocalToCloudKit()` throws `notYetImplemented`** in Task 7 — the migration UI prompt is wired (Task 20), but the actual cross-container copy is left as a v1 fast-follow because exercising it requires real iCloud and is best done with manual QA. Spec §6 documents the expected behavior.
-- **`MapTabViewModel.reload(allowingNearMe:)`** falls through to `summaries()` in both branches in Task 24 — once a `CLLocationManager`-based current-location source is wired (v1.1), the near-me branch will call `summariesNear(coordinate:radiusMeters:)`.
+- **`MapTabViewModel.reload(allowingNearMe:)`** calls the near-query path with a placeholder coordinate. Once a current-location source is wired (v1.1), it should pass the device coordinate.
 - **No UI tests** in v1 (per spec §13). Manual checklist (Task 30) covers regressions.
