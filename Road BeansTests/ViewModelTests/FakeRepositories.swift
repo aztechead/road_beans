@@ -25,6 +25,7 @@ final class FakePlaceRepository: PlaceRepository, @unchecked Sendable {
 
 final class FakeVisitRepository: VisitRepository, @unchecked Sendable {
     var recents: [RecentVisitRow] = []
+    var details: [UUID: VisitDetail] = [:]
     var saved: [CreateVisitCommand] = []
     var deletedIDs: [UUID] = []
 
@@ -44,7 +45,7 @@ final class FakeVisitRepository: VisitRepository, @unchecked Sendable {
     }
 
     func detail(id: UUID) async throws -> VisitDetail? {
-        nil
+        details[id]
     }
 }
 
