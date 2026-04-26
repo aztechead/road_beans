@@ -11,12 +11,7 @@ struct RootView: View {
             case .pendingRelaunch:
                 RelaunchPromptView()
             case .pendingMigration:
-                MigrationPromptView(
-                    keepLocalOnly: persistence.deferMigration,
-                    migrate: {
-                        try? await persistence.migrateLocalToCloudKit()
-                    }
-                )
+                MigrationPromptView(keepLocalOnly: persistence.deferMigration)
             case .localOnly, .cloudKitBacked:
                 tabs
             }

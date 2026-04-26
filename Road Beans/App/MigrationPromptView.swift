@@ -2,7 +2,10 @@ import SwiftUI
 
 struct MigrationPromptView: View {
     let keepLocalOnly: () -> Void
-    let migrate: () async -> Void
+
+    @Environment(\.dataExportService) private var exportService
+    @State private var exportURL: URL?
+    @State private var isExporting = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -13,20 +16,42 @@ struct MigrationPromptView: View {
                 .font(.roadBeansHeadline)
                 .multilineTextAlignment(.center)
 
-            HStack {
-                Button("Keep local only", action: keepLocalOnly)
-                    .buttonStyle(.bordered)
+            Text("Automatic migration is not yet supported. Export your data, then reinstall to start fresh with iCloud sync.")
+                .font(.roadBeansBody)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
 
-                Button("Yes, migrate") {
-                    Task { await migrate() }
+            Button {
+                Task { await prepareExport() }
+            } label: {
+                if isExporting {
+                    Label("Preparing…", systemImage: "arrow.clockwise")
+                } else {
+                    Label("Export Backup", systemImage: "square.and.arrow.up")
                 }
-                .buttonStyle(.borderedProminent)
             }
+            .buttonStyle(.borderedProminent)
+            .disabled(isExporting)
+
+            if let exportURL {
+                ShareLink(item: exportURL) {
+                    Label("Share Export File", systemImage: "square.and.arrow.up")
+                }
+            }
+
+            Button("Keep Local Only", action: keepLocalOnly)
+                .buttonStyle(.bordered)
         }
         .padding()
+    }
+
+    private func prepareExport() async {
+        isExporting = true
+        defer { isExporting = false }
+        exportURL = try? await exportService.writeExportFile()
     }
 }
 
 #Preview {
-    MigrationPromptView(keepLocalOnly: {}, migrate: {})
+    MigrationPromptView(keepLocalOnly: {})
 }
