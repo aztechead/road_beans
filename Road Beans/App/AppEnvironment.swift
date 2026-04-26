@@ -1,11 +1,5 @@
 import SwiftUI
 
-// MARK: - Stub protocol forward declarations
-// Replace each stub with its real protocol as the corresponding task lands.
-#if STUB_REPOSITORY_PROTOCOLS_NOT_YET_DEFINED
-protocol VisitRepository: Sendable {}
-#endif
-
 // MARK: - Environment Keys
 
 private struct PlaceRepositoryKey: EnvironmentKey {
