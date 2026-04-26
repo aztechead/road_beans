@@ -141,6 +141,8 @@ xcodebuild -project "Road Beans.xcodeproj" -scheme "Road Beans" -destination 'ge
 
 ## Task 4: Improve Current Location UX and Map Behavior
 
+**Status:** Completed in implementation pass after this plan was created.
+
 **Goal:** Make near-me feel product-grade instead of a binary toggle with a blank/failure state.
 
 **Files:**

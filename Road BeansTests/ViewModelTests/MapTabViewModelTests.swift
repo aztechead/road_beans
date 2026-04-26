@@ -27,6 +27,7 @@ struct MapTabViewModelTests {
 
         #expect(viewModel.places.count == 1)
         #expect(places.summariesNearCalls.isEmpty)
+        #expect(viewModel.mapCenter == nil)
     }
 
     @Test func reloadFetchesNearWhenAuthorized() async {
@@ -53,6 +54,10 @@ struct MapTabViewModelTests {
         #expect(places.summariesNearCalls.count == 1)
         #expect(places.summariesNearCalls[0].coordinate.latitude == 34.5)
         #expect(places.summariesNearCalls[0].coordinate.longitude == -112.25)
+        #expect(viewModel.currentLocationUnavailable == false)
+        #expect(viewModel.isLoadingCurrentLocation == false)
+        #expect(viewModel.mapCenter?.latitude == 34.5)
+        #expect(viewModel.mapCenter?.longitude == -112.25)
     }
 
     @Test func deniedPermissionExposed() async {
@@ -78,5 +83,51 @@ struct MapTabViewModelTests {
         #expect(viewModel.currentLocationUnavailable)
         #expect(viewModel.places.isEmpty)
         #expect(places.summariesNearCalls.isEmpty)
+        #expect(viewModel.currentLocationErrorMessage != nil)
+        #expect(viewModel.isLoadingCurrentLocation == false)
+    }
+
+    @Test func retryNearMeReloadsAfterUnavailableLocation() async {
+        let places = FakePlaceRepository()
+        places.stored = [
+            PlaceSummary(
+                id: UUID(),
+                name: "Bean Stop",
+                kind: .coffeeShop,
+                address: nil,
+                coordinate: CLLocationCoordinate2D(latitude: 34.1, longitude: -112.1),
+                averageRating: nil,
+                visitCount: 1
+            )
+        ]
+        let permission = FakeLocationPermissionService(initial: .authorized)
+        let location = FakeCurrentLocationProvider(coordinate: CLLocationCoordinate2D(latitude: 34.1, longitude: -112.1))
+        let viewModel = MapTabViewModel(places: places, permission: permission, currentLocation: location)
+
+        await viewModel.refreshPermissionStatus()
+        await viewModel.retryNearMe()
+
+        #expect(viewModel.nearMeOn)
+        #expect(viewModel.currentLocationUnavailable == false)
+        #expect(viewModel.places.count == 1)
+        #expect(places.summariesNearCalls.count == 1)
+    }
+
+    @Test func usableSnapshotDrivesMapCenter() async {
+        let places = FakePlaceRepository()
+        let snapshot = CurrentLocationSnapshot(
+            coordinate: CLLocationCoordinate2D(latitude: 35.2, longitude: -111.9),
+            horizontalAccuracy: 42,
+            timestamp: .now
+        )
+        let permission = FakeLocationPermissionService(initial: .authorized)
+        let location = FakeCurrentLocationProvider(snapshot: snapshot)
+        let viewModel = MapTabViewModel(places: places, permission: permission, currentLocation: location)
+
+        await viewModel.refreshPermissionStatus()
+        await viewModel.reload(allowingNearMe: true)
+
+        #expect(viewModel.mapCenter == MapCenter(snapshot))
+        #expect(viewModel.currentLocation == snapshot)
     }
 }

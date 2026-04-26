@@ -202,7 +202,7 @@ private final class MissingLocationPermissionService: LocationPermissionService,
 }
 
 private struct MissingCurrentLocationProvider: CurrentLocationProvider {
-    func currentCoordinate() async throws -> CLLocationCoordinate2D {
+    func currentLocation() async throws -> CurrentLocationSnapshot {
         throw MissingEnvironmentDependencyError.missing("CurrentLocationProvider")
     }
 }

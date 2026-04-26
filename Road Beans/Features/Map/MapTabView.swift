@@ -8,6 +8,7 @@ struct MapTabView: View {
     @Environment(\.currentLocationProvider) private var currentLocationProvider
     @State private var viewModel: MapTabViewModel?
     @State private var selectedPlace: PlaceSummary?
+    @State private var mapPosition: MapCameraPosition = .automatic
 
     var body: some View {
         NavigationStack {
@@ -58,12 +59,18 @@ struct MapTabView: View {
                     }
                 }
 
-            if viewModel.nearMeOn && (viewModel.permissionStatus == .denied || viewModel.permissionStatus == .restricted) {
+            if viewModel.isLoadingCurrentLocation {
+                loadingLocationState
+            } else if viewModel.nearMeOn && (viewModel.permissionStatus == .denied || viewModel.permissionStatus == .restricted) {
                 deniedRationale
             } else if viewModel.currentLocationUnavailable {
-                currentLocationUnavailableState
+                currentLocationUnavailableState(viewModel)
             } else {
-                Map {
+                Map(position: $mapPosition) {
+                    if viewModel.currentLocation != nil {
+                        UserAnnotation()
+                    }
+
                     ForEach(viewModel.places) { place in
                         if let coordinate = place.coordinate {
                             Annotation(place.name, coordinate: coordinate) {
@@ -80,6 +87,20 @@ struct MapTabView: View {
                             .tint(place.kind.accentColor)
                         }
                     }
+                }
+                .onChange(of: viewModel.mapCenter) { _, center in
+                    guard let center else {
+                        mapPosition = .automatic
+                        return
+                    }
+
+                    mapPosition = .region(
+                        MKCoordinateRegion(
+                            center: center.coordinate,
+                            latitudinalMeters: 50_000,
+                            longitudinalMeters: 50_000
+                        )
+                    )
                 }
             }
         }
@@ -108,12 +129,32 @@ struct MapTabView: View {
         .padding()
     }
 
-    private var currentLocationUnavailableState: some View {
-        ContentUnavailableView(
-            "Current Location Unavailable",
-            systemImage: "location.slash",
-            description: Text("Road Beans could not get your current location. Check Location Services and try again.")
-        )
+    private var loadingLocationState: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Finding nearby stops...")
+                .font(.roadBeansBody)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    private func currentLocationUnavailableState(_ viewModel: MapTabViewModel) -> some View {
+        VStack(spacing: 16) {
+            ContentUnavailableView(
+                "Current Location Unavailable",
+                systemImage: "location.slash",
+                description: Text(viewModel.currentLocationErrorMessage ?? "Road Beans could not get your current location.")
+            )
+
+            Button("Try Again") {
+                Task {
+                    await viewModel.retryNearMe()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+        }
         .padding()
     }
 
