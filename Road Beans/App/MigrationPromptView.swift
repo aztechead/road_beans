@@ -56,6 +56,7 @@ struct MigrationPromptView: View {
     private func prepareExport() async {
         isExporting = true
         exportError = nil
+        exportURL = nil
         defer { isExporting = false }
         do {
             exportURL = try await exportService.writeExportFile()
