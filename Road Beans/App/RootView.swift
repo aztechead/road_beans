@@ -38,6 +38,10 @@ struct RootView: View {
                     .tabItem { Label("Map", systemImage: "map.fill") }
                     .tag(AppTab.map)
 
+                BackupSettingsView()
+                    .tabItem { Label("Backup", systemImage: "externaldrive.fill") }
+                    .tag(AppTab.backup)
+
                 Color.clear
                     .tabItem { Label("Add", systemImage: "plus.circle.fill") }
                     .tag(AppTab.add)
@@ -74,5 +78,6 @@ struct RootView: View {
 private enum AppTab: Hashable {
     case list
     case map
+    case backup
     case add
 }
