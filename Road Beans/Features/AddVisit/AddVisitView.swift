@@ -16,6 +16,8 @@ struct AddVisitView: View {
                     TabView(selection: Bindable(model).currentPage) {
                         AddVisitPlacePage(model: model)
                             .tag(0)
+                        AddVisitVisitPage(model: model)
+                            .tag(1)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                 } else {

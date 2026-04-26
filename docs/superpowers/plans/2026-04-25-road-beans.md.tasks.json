@@ -254,12 +254,12 @@
     {
       "id": 26,
       "subject": "Task 26: AddVisit page 2 — Visit details",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         25,
         10
       ],
-      "description": "**Goal:** Date, multi-photo picker, tag token field with autocomplete, mood note.\n\n```json:metadata\n{\"files\":[\"Road Beans/Features/AddVisit/VisitDetailsPage.swift\",\"Road Beans/Features/AddVisit/TagTokenField.swift\",\"Road Beans/Features/AddVisit/TagTokenLogic.swift\",\"Road BeansTests/ViewModelTests/TagTokenLogicTests.swift\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' test -only-testing:\\\"Road BeansTests/TagTokenLogicTests\\\"\",\"acceptanceCriteria\":[\"normalize + parseTokens helpers\",\"PhotosPicker multi-select\",\"Tag autocomplete via repository\",\"Mood note bound\"]}\n```"
+      "description": "**Goal:** Date, multi-photo picker, tag token field with autocomplete.\n\n```json:metadata\n{\"files\":[\"Road Beans/Features/AddVisit/AddVisitVisitPage.swift\",\"Road Beans/Features/AddVisit/TagTokenField.swift\",\"Road BeansTests/ViewModelTests/TagTokenSuggestionTests.swift\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' test -only-testing:\\\"Road BeansTests/TagTokenSuggestionTests\\\"\",\"acceptanceCriteria\":[\"normalize + dedup tag helpers\",\"PhotosPicker multi-select\",\"Tag autocomplete via repository\",\"Visit date bound\"]}\n```"
     },
     {
       "id": 27,
@@ -304,5 +304,5 @@
       "description": "**Goal:** Final pass. Dynamic Type, dark mode, sign-out/sign-in iCloud QA, document checklist for future TestFlight builds.\n\n```json:metadata\n{\"files\":[\"docs/superpowers/qa/2026-04-25-manual-qa-checklist.md\"],\"verifyCommand\":\"xcodebuild -project \\\"Road Beans.xcodeproj\\\" -scheme \\\"Road Beans\\\" -destination 'platform=iOS Simulator,name=iPhone 17' build test\",\"acceptanceCriteria\":[\"Smoke flow passes\",\"Dark mode + Dynamic Type ok\",\"Haptics + Reduce Motion gates\",\"iCloud sign-out/sign-in flows\",\"QA checklist documented\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-04-26T13:58:00Z"
+  "lastUpdated": "2026-04-26T14:00:24Z"
 }
