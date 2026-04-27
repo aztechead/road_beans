@@ -40,7 +40,7 @@ struct SmokeTests {
         #expect(map.state == .loaded)
         #expect(map.places.map(\.id) == RoadBeansSeedData.places.map(\.id))
 
-        let placeDetail = PlaceDetailViewModel(placeRepo: places)
+        let placeDetail = PlaceDetailViewModel(placeRepo: places, visitRepo: visits)
         await placeDetail.load(id: RoadBeansSeedData.lovesID)
         #expect(placeDetail.state == .loaded)
         #expect(placeDetail.detail?.name == "Loves Travel Stop")

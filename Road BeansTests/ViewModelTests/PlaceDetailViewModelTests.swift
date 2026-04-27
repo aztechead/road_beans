@@ -26,7 +26,7 @@ struct PlaceDetailViewModelTests {
             averageRating: 4.0,
             visits: []
         )
-        let viewModel = PlaceDetailViewModel(placeRepo: repository)
+        let viewModel = PlaceDetailViewModel(placeRepo: repository, visitRepo: FakeVisitRepository())
 
         await viewModel.load(id: id)
 
@@ -36,7 +36,7 @@ struct PlaceDetailViewModelTests {
 
     @Test func missingDetailSetsDetailNil() async {
         let repository = FakePlaceRepository()
-        let viewModel = PlaceDetailViewModel(placeRepo: repository)
+        let viewModel = PlaceDetailViewModel(placeRepo: repository, visitRepo: FakeVisitRepository())
 
         await viewModel.load(id: UUID())
 
@@ -47,7 +47,7 @@ struct PlaceDetailViewModelTests {
     @Test func repositoryFailureSetsFailedState() async {
         let repository = FakePlaceRepository()
         repository.detailError = FakeViewModelError.failed
-        let viewModel = PlaceDetailViewModel(placeRepo: repository)
+        let viewModel = PlaceDetailViewModel(placeRepo: repository, visitRepo: FakeVisitRepository())
 
         await viewModel.load(id: UUID())
 
@@ -76,12 +76,43 @@ struct PlaceDetailViewModelTests {
             averageRating: nil,
             visits: []
         )
-        let viewModel = PlaceDetailViewModel(placeRepo: repository)
+        let viewModel = PlaceDetailViewModel(placeRepo: repository, visitRepo: FakeVisitRepository())
         let command = UpdatePlaceCommand(id: id, name: "New", kind: .coffeeShop, address: "Main")
 
         try await viewModel.update(command)
 
         #expect(repository.updates == [command])
+        #expect(viewModel.state == .loaded)
+    }
+
+    @Test func deleteVisitPassesCommandAndReloads() async throws {
+        let repository = FakePlaceRepository()
+        let visits = FakeVisitRepository()
+        let placeID = UUID()
+        let visitID = UUID()
+        repository.details[placeID] = PlaceDetail(
+            id: placeID,
+            name: "Loves",
+            kind: .truckStop,
+            source: .mapKit,
+            address: nil,
+            streetNumber: nil,
+            streetName: nil,
+            city: nil,
+            region: nil,
+            postalCode: nil,
+            country: nil,
+            phoneNumber: nil,
+            websiteURL: nil,
+            coordinate: nil,
+            averageRating: nil,
+            visits: []
+        )
+        let viewModel = PlaceDetailViewModel(placeRepo: repository, visitRepo: visits)
+
+        try await viewModel.deleteVisit(id: visitID, placeID: placeID)
+
+        #expect(visits.deletedIDs == [visitID])
         #expect(viewModel.state == .loaded)
     }
 }

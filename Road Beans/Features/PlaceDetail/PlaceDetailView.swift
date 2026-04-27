@@ -4,6 +4,7 @@ import SwiftUI
 struct PlaceDetailView: View {
     let placeID: UUID
     @Environment(\.placeRepository) private var placeRepository
+    @Environment(\.visitRepository) private var visitRepository
     @State private var viewModel: PlaceDetailViewModel?
     @State private var expandedVisits: Set<UUID> = []
     @State private var isEditing = false
@@ -63,7 +64,7 @@ struct PlaceDetailView: View {
 
     private func ensureLoaded() async {
         if viewModel == nil {
-            viewModel = PlaceDetailViewModel(placeRepo: placeRepository)
+            viewModel = PlaceDetailViewModel(placeRepo: placeRepository, visitRepo: visitRepository)
         }
         await viewModel?.load(id: placeID)
     }
@@ -94,16 +95,20 @@ struct PlaceDetailView: View {
     }
 
     private func content(_ detail: PlaceDetail) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.md) {
+        List {
+            Section {
                 header(detail)
                 averageBlock(detail)
-                visitsList(detail)
             }
-            .padding(RoadBeansTheme.Spacing.md)
-            .padding(.bottom, 88)
+
+            visitsList(detail)
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
         .roadBeansScreenBackground()
+        .navigationDestination(for: VisitRoute.self) { route in
+            VisitDetailView(visitID: route.id)
+        }
     }
 
     private func header(_ detail: PlaceDetail) -> some View {
@@ -158,16 +163,17 @@ struct PlaceDetailView: View {
     }
 
     private func visitsList(_ detail: PlaceDetail) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Visits")
-                .font(.roadBeansHeadline)
-
+        Section("Visits") {
             ForEach(detail.visits) { visit in
                 visitCard(visit)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            Task { await deleteVisit(visit.id) }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
             }
-        }
-        .navigationDestination(for: VisitRoute.self) { route in
-            VisitDetailView(visitID: route.id)
         }
     }
 
@@ -213,6 +219,8 @@ struct PlaceDetailView: View {
             }
         }
         .glassCard()
+        .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+        .listRowBackground(Color.clear)
     }
 
     private func toggleVisitExpansion(_ id: UUID) {
@@ -221,6 +229,12 @@ struct PlaceDetailView: View {
         } else {
             expandedVisits.insert(id)
         }
+    }
+
+    private func deleteVisit(_ id: UUID) async {
+        try? await viewModel?.deleteVisit(id: id, placeID: placeID)
+        expandedVisits.remove(id)
+        NotificationCenter.default.post(name: .roadBeansVisitDeleted, object: nil)
     }
 
     private func openInMaps(name: String, coordinate: CLLocationCoordinate2D) {

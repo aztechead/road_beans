@@ -184,6 +184,24 @@ struct PlaceListViewModelTests {
         #expect(!viewModel.isDateFilterEnabled)
     }
 
+    @Test func deleteVisitPassesCommandAndReloads() async throws {
+        let visits = FakeVisitRepository()
+        let visitID = UUID()
+        visits.recents = [
+            RecentVisitRow(
+                visit: VisitRow(id: visitID, date: .now, drinkCount: 1, tagNames: [], photoCount: 0, averageRating: 4.0),
+                placeName: "Loves",
+                placeKind: .truckStop
+            )
+        ]
+        let viewModel = PlaceListViewModel(places: FakePlaceRepository(), visits: visits)
+
+        try await viewModel.deleteVisit(id: visitID)
+
+        #expect(visits.deletedIDs == [visitID])
+        #expect(viewModel.state == .loaded)
+    }
+
     @Test func emptyRepositoriesSetEmptyState() async {
         let viewModel = PlaceListViewModel(
             places: FakePlaceRepository(),

@@ -93,6 +93,13 @@ struct PlaceListView: View {
                             case .recentVisits:
                                 ForEach(viewModel.filteredVisits, id: \.visit.id) { row in
                                     visitRow(row)
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                            Button(role: .destructive) {
+                                                Task { await deleteVisit(row.visit.id, using: viewModel) }
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
                                 }
                             }
                         }
@@ -109,6 +116,11 @@ struct PlaceListView: View {
             }
         }
         .roadBeansScreenBackground()
+    }
+
+    private func deleteVisit(_ id: UUID, using viewModel: PlaceListViewModel) async {
+        try? await viewModel.deleteVisit(id: id)
+        NotificationCenter.default.post(name: .roadBeansVisitDeleted, object: nil)
     }
 
     private func searchField(text: Binding<String>) -> some View {
