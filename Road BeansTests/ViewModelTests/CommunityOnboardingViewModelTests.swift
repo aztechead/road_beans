@@ -50,6 +50,7 @@ private struct FailingJoinCommunityService: CommunityService {
 
     func fetchMember(userRecordID: String) async throws -> CommunityMemberSnapshot? { nil }
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail? { nil }
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] { [] }
     func like(visitRecordName: String) async throws {}
     func unlike(visitRecordName: String) async throws {}
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool { false }

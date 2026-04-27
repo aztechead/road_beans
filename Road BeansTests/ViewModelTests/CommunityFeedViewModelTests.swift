@@ -41,6 +41,61 @@ struct CommunityFeedViewModelTests {
         #expect(viewModel.everyoneRows.map(\.authorUserRecordID) == ["me"])
     }
 
+    @Test func favoritesFilterShowsOnlyLikedVisits() async throws {
+        let liked = CommunityVisitRow(
+            id: "liked",
+            authorUserRecordID: "other",
+            authorDisplayName: "Other",
+            authorTasteProfile: .midpoint,
+            placeName: "Cafe",
+            placeKindRawValue: PlaceKind.coffeeShop.rawValue,
+            placeMapKitIdentifier: nil,
+            placeLatitude: nil,
+            placeLongitude: nil,
+            visitDate: Date.now,
+            beanRating: 4,
+            drinkSummary: "Drip",
+            tagSummary: "",
+            publishedAt: Date.now,
+            likeCount: 0,
+            commentCount: 0
+        )
+        let unliked = CommunityVisitRow(
+            id: "unliked",
+            authorUserRecordID: "other",
+            authorDisplayName: "Other",
+            authorTasteProfile: .midpoint,
+            placeName: "Roaster",
+            placeKindRawValue: PlaceKind.coffeeShop.rawValue,
+            placeMapKitIdentifier: nil,
+            placeLatitude: nil,
+            placeLongitude: nil,
+            visitDate: Date.now,
+            beanRating: 3,
+            drinkSummary: "Latte",
+            tagSummary: "",
+            publishedAt: Date.now.addingTimeInterval(-60),
+            likeCount: 0,
+            commentCount: 0
+        )
+        let service = InMemoryCommunityService(
+            currentUserRecordID: "me",
+            members: [
+                CommunityMemberSnapshot(userRecordID: "me", displayName: "Me", tasteProfile: .midpoint, joinedAt: Date.now),
+                CommunityMemberSnapshot(userRecordID: "other", displayName: "Other", tasteProfile: .midpoint, joinedAt: Date.now)
+            ],
+            visits: [liked, unliked]
+        )
+        try await service.like(visitRecordName: "liked")
+        let viewModel = CommunityFeedViewModel(service: service, favorites: FakeFavoriteMemberRepository())
+
+        viewModel.filter = .favorites
+        await viewModel.refresh()
+
+        #expect(viewModel.state == .loaded)
+        #expect(viewModel.everyoneRows.map(\.id) == ["liked"])
+    }
+
     private func draft() -> CommunityVisitDraft {
         CommunityVisitDraft(
             localVisitID: UUID(),
@@ -113,6 +168,7 @@ private struct ThrowingFeedCommunityService: CommunityService {
 
     func fetchMember(userRecordID: String) async throws -> CommunityMemberSnapshot? { nil }
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail? { nil }
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] { [] }
     func like(visitRecordName: String) async throws {}
     func unlike(visitRecordName: String) async throws {}
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool { false }

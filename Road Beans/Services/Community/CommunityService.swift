@@ -36,6 +36,7 @@ protocol CommunityService: Sendable {
     func fetchVisits(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, nameContains: String) async throws -> [CommunityVisitRow]
     func fetchMember(userRecordID: String) async throws -> CommunityMemberSnapshot?
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail?
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow]
 
     func like(visitRecordName: String) async throws
     func unlike(visitRecordName: String) async throws

@@ -200,6 +200,24 @@ actor CloudKitCommunityService: CommunityService {
         }
     }
 
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] {
+        let userID = try await currentUserRecordID()
+        let predicate = NSPredicate(format: "userRecordID == %@", userID.recordName)
+        let query = CKQuery(recordType: CommunityRecordType.like, predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+
+        var rows: [CommunityVisitRow] = []
+        let likes = try await queryAll(query)
+        for like in likes {
+            guard
+                let recordName = like["communityVisitRecordName"] as? String,
+                let detail = try await fetchVisitDetail(recordName: recordName)
+            else { continue }
+            rows.append(detail.row)
+        }
+        return rows
+    }
+
     func like(visitRecordName: String) async throws {
         let userID = try await currentUserRecordID()
         let displayName = try await currentMemberDisplayName()
