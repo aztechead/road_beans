@@ -4,7 +4,7 @@ import Foundation
 struct MissingCommunityService: CommunityService {
     func currentMember() async throws -> CommunityMemberSnapshot? { throw CommunityServiceError.missing }
     func join(displayName: String, profile: TasteProfile, existingVisits: [CommunityVisitDraft]) async throws { throw CommunityServiceError.missing }
-    func leave() async throws { throw CommunityServiceError.missing }
+    func leave(deleteRatings: Bool) async throws { throw CommunityServiceError.missing }
     func updateProfile(displayName: String, profile: TasteProfile) async throws { throw CommunityServiceError.missing }
     func publish(_ visit: CommunityVisitDraft) async throws -> String { throw CommunityServiceError.missing }
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws { throw CommunityServiceError.missing }

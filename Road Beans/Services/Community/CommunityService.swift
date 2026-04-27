@@ -17,7 +17,7 @@ struct CommunityVisitDraft: Sendable, Equatable {
 protocol CommunityService: Sendable {
     func currentMember() async throws -> CommunityMemberSnapshot?
     func join(displayName: String, profile: TasteProfile, existingVisits: [CommunityVisitDraft]) async throws
-    func leave() async throws
+    func leave(deleteRatings: Bool) async throws
     func updateProfile(displayName: String, profile: TasteProfile) async throws
 
     func publish(_ visit: CommunityVisitDraft) async throws -> String

@@ -9,8 +9,7 @@ struct CommunityOnboardingView: View {
         NavigationStack {
             Form {
                 Section("Profile") {
-                    TextField("Display name", text: $viewModel.displayName)
-                        .textInputAutocapitalization(.words)
+                    RoadBeansClearableTextField("Display name", text: $viewModel.displayName, autocapitalization: .words)
                 }
 
                 Section("Taste Profile") {

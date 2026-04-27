@@ -31,7 +31,7 @@ struct InMemoryCommunityServiceTests {
         #expect(detail?.row.commentCount == 1)
     }
 
-    @Test func leaveRemovesAuthoredRecords() async throws {
+    @Test func leaveCanRemoveAuthoredRecords() async throws {
         let service = InMemoryCommunityService(currentUserRecordID: "me")
         try await service.join(displayName: "Me", profile: .midpoint, existingVisits: [
             CommunityVisitDraft(
@@ -48,11 +48,23 @@ struct InMemoryCommunityServiceTests {
             )
         ])
 
-        try await service.leave()
+        try await service.leave(deleteRatings: true)
 
         let page = try await service.fetchFeedPage(cursor: nil, limit: 50, authorIDsToInclude: nil, authorIDsToExclude: [])
         #expect(try await service.currentMember() == nil)
         #expect(page.rows.isEmpty)
+    }
+
+    @Test func leaveCanKeepAuthoredRecords() async throws {
+        let service = InMemoryCommunityService(currentUserRecordID: "me")
+        try await service.join(displayName: "Me", profile: .midpoint, existingVisits: [])
+        let recordName = try await service.publish(draft())
+
+        try await service.leave(deleteRatings: false)
+
+        let page = try await service.fetchFeedPage(cursor: nil, limit: 50, authorIDsToInclude: nil, authorIDsToExclude: [])
+        #expect(try await service.currentMember() == nil)
+        #expect(page.rows.map(\.id) == [recordName])
     }
 
     @Test func deleteVisitRemovesOwnPublishedReviewAndSocialRows() async throws {

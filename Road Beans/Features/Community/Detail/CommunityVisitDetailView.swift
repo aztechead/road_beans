@@ -80,7 +80,7 @@ struct CommunityVisitDetailView: View {
                         }
 
                         HStack {
-                            TextField(
+                            RoadBeansClearableTextField(
                                 "Add a comment",
                                 text: Binding(
                                     get: { viewModel.commentText },

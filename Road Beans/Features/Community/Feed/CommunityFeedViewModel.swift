@@ -58,6 +58,7 @@ final class CommunityFeedViewModel {
     private var cache: [CommunityFeedFilter: CachedFeed] = [:]
     private var hasHydrated = false
     private let service: any CommunityService
+    private let memberCache: CommunityMemberCache?
     private let favorites: any FavoriteMemberRepository
     private let diskCache: CommunityFeedDiskCache
     private let logger = Logger(subsystem: "brainmeld.Road-Beans", category: "CommunityFeed")
@@ -65,10 +66,12 @@ final class CommunityFeedViewModel {
     init(
         service: any CommunityService,
         favorites: any FavoriteMemberRepository,
+        memberCache: CommunityMemberCache? = nil,
         diskCache: CommunityFeedDiskCache = CommunityFeedDiskCache()
     ) {
         self.service = service
         self.favorites = favorites
+        self.memberCache = memberCache
         self.diskCache = diskCache
     }
 
@@ -131,6 +134,7 @@ final class CommunityFeedViewModel {
         do {
             currentMember = try await service.currentMember()
             guard let currentMember else {
+                await memberCache?.store(nil)
                 favoritesRows = []
                 everyoneRows = []
                 nextCursor = nil
@@ -139,6 +143,7 @@ final class CommunityFeedViewModel {
                 await persistCacheToDisk()
                 return
             }
+            await memberCache?.store(currentMember)
 
             let favoriteIDs = Set((try? favorites.all().map(\.memberUserRecordID)) ?? [])
             let excludeSelf: Set<String> = [currentMember.userRecordID]
