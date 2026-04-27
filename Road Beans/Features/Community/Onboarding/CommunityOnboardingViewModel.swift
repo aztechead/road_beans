@@ -71,6 +71,9 @@ final class CommunityOnboardingViewModel {
         if case CommunityServiceError.invalidInput = error {
             return "the entered profile is invalid."
         }
+        if case CommunityServiceError.schemaNotConfigured = error {
+            return "community sharing is not enabled for this build yet. The CloudKit production schema needs to be deployed."
+        }
         if error is TimeoutError {
             return "CloudKit did not respond within 20 seconds."
         }

@@ -265,7 +265,7 @@ actor CloudKitCommunityService: CommunityService {
                 if let record {
                     continuation.resume(returning: record)
                 } else {
-                    continuation.resume(throwing: error ?? CommunityServiceError.underlying("CloudKit save failed"))
+                    continuation.resume(throwing: Self.communityError(from: error))
                 }
             }
         }
@@ -325,10 +325,26 @@ actor CloudKitCommunityService: CommunityService {
             case .success(let cursor):
                 continuation.resume(returning: (records, cursor))
             case .failure(let error):
-                continuation.resume(throwing: error)
+                continuation.resume(throwing: Self.communityError(from: error))
             }
         }
         publicDB.add(operation)
+    }
+
+    private nonisolated static func communityError(from error: Error?) -> Error {
+        guard let error else {
+            return CommunityServiceError.underlying("CloudKit request failed")
+        }
+        if isMissingProductionSchemaError(error) {
+            return CommunityServiceError.schemaNotConfigured
+        }
+        return error
+    }
+
+    private nonisolated static func isMissingProductionSchemaError(_ error: Error) -> Bool {
+        let message = String(describing: error)
+        return message.localizedCaseInsensitiveContains("Cannot create new type")
+            || message.localizedCaseInsensitiveContains("production schema")
     }
 
     private func rows(from records: [CKRecord]) async throws -> [CommunityVisitRow] {
@@ -488,7 +504,7 @@ actor CloudKitCommunityService: CommunityService {
         }
     }
 
-    private func isLikedByCurrentUser(_ recordName: String) async throws -> Bool {
+    func isLikedByCurrentUser(_ recordName: String) async throws -> Bool {
         let userID = try await currentUserRecordID()
         let recordID = CKRecord.ID(recordName: "like-\(recordName)-\(userID.recordName)")
         do {

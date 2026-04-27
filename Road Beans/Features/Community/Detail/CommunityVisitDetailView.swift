@@ -36,6 +36,13 @@ struct CommunityVisitDetailView: View {
         case .loaded:
             if let detail = viewModel.detail {
                 List {
+                    if let actionMessage = viewModel.actionMessage {
+                        Section {
+                            Label(actionMessage, systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(.red)
+                        }
+                    }
+
                     Section {
                         CommunityVisitRowView(row: detail.row, isFavorite: false)
                     }
@@ -70,9 +77,13 @@ struct CommunityVisitDetailView: View {
                             Button {
                                 Task { await viewModel.addComment() }
                             } label: {
-                                Image(systemName: "paperplane.fill")
+                                if viewModel.isPostingComment {
+                                    ProgressView()
+                                } else {
+                                    Image(systemName: "paperplane.fill")
+                                }
                             }
-                            .disabled(viewModel.commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .disabled(viewModel.commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isPostingComment)
                         }
                     }
                 }
@@ -83,6 +94,7 @@ struct CommunityVisitDetailView: View {
                         } label: {
                             Image(systemName: detail.likedByCurrentUser ? "heart.fill" : "heart")
                         }
+                        .disabled(viewModel.isUpdatingLike)
                     }
                 }
             }

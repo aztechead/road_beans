@@ -10,14 +10,14 @@ actor CommunityFeedDiskCache {
 
     private let url: URL
 
-    init(filename: String = "CommunityFeedCache.json") {
+    init(filename: String? = nil) {
         let baseDirectory = (try? FileManager.default.url(
             for: .cachesDirectory,
             in: .userDomainMask,
             appropriateFor: nil,
             create: true
         )) ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        self.url = baseDirectory.appendingPathComponent(filename)
+        self.url = baseDirectory.appendingPathComponent(filename ?? CommunityFeedDiskCache.defaultFilename)
     }
 
     func load() -> [String: Entry] {
@@ -32,5 +32,17 @@ actor CommunityFeedDiskCache {
 
     func clear() {
         try? FileManager.default.removeItem(at: url)
+    }
+
+    static var legacyFilename: String {
+        "CommunityFeedCache.json"
+    }
+
+    private static var defaultFilename: String {
+        #if DEBUG
+        "CommunityFeedCache-development.json"
+        #else
+        "CommunityFeedCache-production.json"
+        #endif
     }
 }

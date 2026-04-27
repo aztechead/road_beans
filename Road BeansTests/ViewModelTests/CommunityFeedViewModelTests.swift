@@ -114,6 +114,7 @@ private struct ThrowingFeedCommunityService: CommunityService {
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail? { nil }
     func like(visitRecordName: String) async throws {}
     func unlike(visitRecordName: String) async throws {}
+    func isLikedByCurrentUser(_ recordName: String) async throws -> Bool { false }
     func comments(forVisitRecordName recordName: String) async throws -> [CommunityCommentRow] { [] }
 
     func addComment(toVisitRecordName recordName: String, text: String) async throws -> CommunityCommentRow {
