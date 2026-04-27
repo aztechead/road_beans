@@ -8,9 +8,11 @@ final class PlaceDetailViewModel {
     var state: ScreenState = .idle
 
     private let placeRepository: any PlaceRepository
+    private let visitRepository: any VisitRepository
 
-    init(placeRepo: any PlaceRepository) {
+    init(placeRepo: any PlaceRepository, visitRepo: any VisitRepository) {
         self.placeRepository = placeRepo
+        self.visitRepository = visitRepo
     }
 
     func load(id: UUID) async {
@@ -27,5 +29,10 @@ final class PlaceDetailViewModel {
     func update(_ command: UpdatePlaceCommand) async throws {
         try await placeRepository.update(command)
         await load(id: command.id)
+    }
+
+    func deleteVisit(id: UUID, placeID: UUID) async throws {
+        try await visitRepository.delete(DeleteVisitCommand(id: id))
+        await load(id: placeID)
     }
 }

@@ -6,10 +6,12 @@ import SwiftData
 final class LocalPlaceRepository: PlaceRepository {
     private let context: ModelContext
     private let sync: any RemoteSyncCoordinator
+    private let tombstones: any TombstoneRepository
 
-    init(context: ModelContext, sync: any RemoteSyncCoordinator) {
+    init(context: ModelContext, sync: any RemoteSyncCoordinator, tombstones: any TombstoneRepository) {
         self.context = context
         self.sync = sync
+        self.tombstones = tombstones
     }
 
     func findOrCreate(reference: PlaceReference) async throws -> UUID {
@@ -59,6 +61,16 @@ final class LocalPlaceRepository: PlaceRepository {
         await sync.markDirty(.place, id: place.id)
     }
 
+    func delete(_ command: DeletePlaceCommand) async throws {
+        guard let place = try fetchPlace(id: command.id) else { return }
+        let id = place.id
+        let remoteID = place.remoteID
+
+        context.delete(place)
+        try context.save()
+        try await tombstones.insertTombstone(entityKind: .place, entityID: id, remoteID: remoteID)
+    }
+
     func summaries() async throws -> [PlaceSummary] {
         let descriptor = FetchDescriptor<Place>(
             sortBy: [SortDescriptor(\.lastModifiedAt, order: .reverse)]
@@ -76,11 +88,7 @@ final class LocalPlaceRepository: PlaceRepository {
     }
 
     func detail(id: UUID) async throws -> PlaceDetail? {
-        let predicate = #Predicate<Place> { $0.id == id }
-        var descriptor = FetchDescriptor<Place>(predicate: predicate)
-        descriptor.fetchLimit = 1
-
-        guard let place = try context.fetch(descriptor).first else { return nil }
+        guard let place = try fetchPlace(id: id) else { return nil }
 
         let visits = place.visits
             .sorted { $0.date > $1.date }
@@ -130,6 +138,13 @@ final class LocalPlaceRepository: PlaceRepository {
 
             return Self.distanceMeters(latitude, longitude, placeLatitude, placeLongitude) < 50
         }
+    }
+
+    private func fetchPlace(id: UUID) throws -> Place? {
+        let predicate = #Predicate<Place> { $0.id == id }
+        var descriptor = FetchDescriptor<Place>(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 
     private static func makePlace(from draft: MapKitPlaceDraft) -> Place {

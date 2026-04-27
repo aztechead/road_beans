@@ -116,6 +116,16 @@ final class PlaceListViewModel {
         }
     }
 
+    func deleteVisit(id: UUID) async throws {
+        try await visitRepository.delete(DeleteVisitCommand(id: id))
+        await reload()
+    }
+
+    func deletePlace(id: UUID) async throws {
+        try await placeRepository.delete(DeletePlaceCommand(id: id))
+        await reload()
+    }
+
     private var normalizedSearchText: String {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
     }

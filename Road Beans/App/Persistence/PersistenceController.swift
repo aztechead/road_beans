@@ -8,62 +8,43 @@ final class PersistenceController {
     private(set) var mode: PersistenceMode
     let container: ModelContainer
 
-    private let defaults: UserDefaults
-    private static let migrationDeferredKey = "RoadBeans.migrationDeferred"
+    private var cloudKitIdentityToken: AnyHashable?
 
     init(
         icloud: iCloudAvailabilityServiceProtocol,
-        migrationDeferred: Bool? = nil,
-        localStoreExists: Bool? = nil,
-        forceLocalOnly: Bool = false,
-        useInMemoryStores: Bool = false,
-        defaults: UserDefaults = .standard
+        useInMemoryStores: Bool = false
     ) {
-        self.defaults = defaults
-
-        let deferredFlag = migrationDeferred ?? defaults.bool(forKey: Self.migrationDeferredKey)
-        let hasLocalStore = localStoreExists ?? Self.localStoreExistsOnDisk()
-        let hasICloudToken = icloud.currentToken() != nil
-
-        let resolvedMode: PersistenceMode
-        if forceLocalOnly {
-            resolvedMode = .localOnly
-        } else if !hasICloudToken {
-            resolvedMode = .localOnly
-        } else if hasLocalStore && !deferredFlag {
-            resolvedMode = .pendingMigration
-        } else if hasLocalStore && deferredFlag {
-            resolvedMode = .localOnly
-        } else {
-            resolvedMode = .cloudKitBacked
-        }
+        let initialICloudToken = icloud.currentToken()
+        cloudKitIdentityToken = initialICloudToken
+        let resolvedMode: PersistenceMode = initialICloudToken == nil ? .iCloudUnavailable : .cloudKitBacked
         mode = resolvedMode
 
         do {
-            container = try Self.makeContainer(mode: resolvedMode, inMemory: useInMemoryStores)
+            container = try Self.makeContainer(inMemory: useInMemoryStores)
         } catch {
             fatalError("ModelContainer init failed: \(error)")
         }
 
         Task { [weak self] in
             for await _ in icloud.identityChanges {
+                let latestToken = icloud.currentToken()
                 await MainActor.run {
-                    self?.mode = .pendingRelaunch
+                    guard let self else { return }
+                    guard latestToken != self.cloudKitIdentityToken else { return }
+                    self.cloudKitIdentityToken = latestToken
+                    if latestToken == nil {
+                        self.mode = .iCloudUnavailable
+                    } else if self.mode == .iCloudUnavailable {
+                        self.mode = .cloudKitBacked
+                    } else {
+                        self.mode = .pendingRelaunch
+                    }
                 }
             }
         }
     }
 
-    func deferMigration() {
-        defaults.set(true, forKey: Self.migrationDeferredKey)
-        mode = .localOnly
-    }
-
-    func migrateLocalToCloudKit() async throws {
-        throw PersistenceMigrationError.notYetImplemented
-    }
-
-    private static func makeContainer(mode: PersistenceMode, inMemory: Bool) throws -> ModelContainer {
+    private static func makeContainer(inMemory: Bool) throws -> ModelContainer {
         if inMemory {
             return try ModelContainer(
                 for: AppSchema.all,
@@ -71,32 +52,11 @@ final class PersistenceController {
             )
         }
 
-        let configuration: ModelConfiguration
-        switch mode {
-        case .cloudKitBacked:
-            configuration = ModelConfiguration(
-                "CloudKitStore",
-                schema: AppSchema.all,
-                cloudKitDatabase: .private("iCloud.brainmeld.Road-Beans")
-            )
-        case .localOnly, .pendingMigration, .pendingRelaunch:
-            configuration = ModelConfiguration(
-                "LocalStore",
-                schema: AppSchema.all,
-                cloudKitDatabase: .none
-            )
-        }
-
+        let configuration = ModelConfiguration(
+            "CloudKitStore",
+            schema: AppSchema.all,
+            cloudKitDatabase: .private("iCloud.brainmeld.Road-Beans")
+        )
         return try ModelContainer(for: AppSchema.all, configurations: [configuration])
     }
-
-    private static func localStoreExistsOnDisk() -> Bool {
-        let url = URL.applicationSupportDirectory.appendingPathComponent("LocalStore.sqlite")
-        return FileManager.default.fileExists(atPath: url.path)
-    }
-}
-
-enum PersistenceMigrationError: Error, Equatable {
-    case notYetImplemented
-    case copyFailed
 }

@@ -75,9 +75,9 @@ private struct OnboardingCard: Identifiable {
             systemImage: "location.fill"
         ),
         OnboardingCard(
-            title: "Keep data local first",
-            message: "This build saves locally. iCloud sync can be enabled later with the right Apple Developer capabilities.",
-            systemImage: "internaldrive.fill"
+            title: "Synced with iCloud",
+            message: "Road Beans uses your private iCloud account to keep your places, visits, drinks, and photos available across devices.",
+            systemImage: "icloud.fill"
         )
     ]
 }

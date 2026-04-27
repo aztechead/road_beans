@@ -8,11 +8,11 @@ struct RootView: View {
     var body: some View {
         Group {
             switch persistence.mode {
+            case .iCloudUnavailable:
+                ICloudRequiredView()
             case .pendingRelaunch:
                 RelaunchPromptView()
-            case .pendingMigration:
-                MigrationPromptView(keepLocalOnly: persistence.deferMigration)
-            case .localOnly, .cloudKitBacked:
+            case .cloudKitBacked:
                 tabs
             }
         }
@@ -25,26 +25,15 @@ struct RootView: View {
     private var tabs: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-                PlaceListView()
+                PlaceListView {
+                    isShowingAddVisit = true
+                }
                     .tabItem { Label("List", systemImage: "list.bullet") }
                     .tag(AppTab.list)
 
                 MapTabView()
                     .tabItem { Label("Map", systemImage: "map.fill") }
                     .tag(AppTab.map)
-
-                BackupSettingsView()
-                    .tabItem { Label("Backup", systemImage: "externaldrive.fill") }
-                    .tag(AppTab.backup)
-
-                Color.clear
-                    .tabItem { Label("Add", systemImage: "plus.circle.fill") }
-                    .tag(AppTab.add)
-            }
-            .onChange(of: selectedTab) { _, newTab in
-                guard newTab == .add else { return }
-                isShowingAddVisit = true
-                selectedTab = .list
             }
             .fullScreenCover(isPresented: $isShowingAddVisit) {
                 AddVisitView()
@@ -73,6 +62,4 @@ struct RootView: View {
 private enum AppTab: Hashable {
     case list
     case map
-    case backup
-    case add
 }

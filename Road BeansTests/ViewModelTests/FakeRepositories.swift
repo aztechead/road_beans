@@ -7,6 +7,7 @@ final class FakePlaceRepository: PlaceRepository, @unchecked Sendable {
     var details: [UUID: PlaceDetail] = [:]
     var summariesNearCalls: [(coordinate: CLLocationCoordinate2D, radiusMeters: Double)] = []
     var updates: [UpdatePlaceCommand] = []
+    var deletedIDs: [UUID] = []
     var summariesError: Error?
     var detailError: Error?
 
@@ -16,6 +17,10 @@ final class FakePlaceRepository: PlaceRepository, @unchecked Sendable {
 
     func update(_ command: UpdatePlaceCommand) async throws {
         updates.append(command)
+    }
+
+    func delete(_ command: DeletePlaceCommand) async throws {
+        deletedIDs.append(command.id)
     }
 
     func summaries() async throws -> [PlaceSummary] {

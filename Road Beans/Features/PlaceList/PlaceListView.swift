@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct PlaceListView: View {
+    var onAddVisit: () -> Void = {}
+
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.visitRepository) private var visitRepository
     @State private var viewModel: PlaceListViewModel?
@@ -15,6 +17,15 @@ struct PlaceListView: View {
                 }
             }
             .navigationTitle("Stops")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        onAddVisit()
+                    } label: {
+                        Label("Add Visit", systemImage: "plus")
+                    }
+                }
+            }
         }
         .task {
             guard viewModel == nil else { return }
@@ -37,6 +48,10 @@ struct PlaceListView: View {
         @Bindable var viewModel = viewModel
 
         return VStack(spacing: 0) {
+            searchField(text: $viewModel.searchText)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
             Picker("List mode", selection: $viewModel.mode) {
                 ForEach(PlaceListMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
@@ -44,7 +59,7 @@ struct PlaceListView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.top, 10)
 
             filterBar(viewModel)
                 .padding(.horizontal)
@@ -85,16 +100,29 @@ struct PlaceListView: View {
                                     NavigationLink(value: place.id) {
                                         placeRow(place)
                                     }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            Task { await deletePlace(place.id, using: viewModel) }
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
                                 }
                             case .recentVisits:
                                 ForEach(viewModel.filteredVisits, id: \.visit.id) { row in
                                     visitRow(row)
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                            Button(role: .destructive) {
+                                                Task { await deleteVisit(row.visit.id, using: viewModel) }
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
                                 }
                             }
                         }
                         .listStyle(.insetGrouped)
                         .scrollContentBackground(.hidden)
-                        .searchable(text: $viewModel.searchText, prompt: "Search stops, drinks, tags")
                         .refreshable {
                             await viewModel.reload()
                         }
@@ -106,6 +134,42 @@ struct PlaceListView: View {
             }
         }
         .roadBeansScreenBackground()
+    }
+
+    private func deleteVisit(_ id: UUID, using viewModel: PlaceListViewModel) async {
+        try? await viewModel.deleteVisit(id: id)
+        NotificationCenter.default.post(name: .roadBeansVisitDeleted, object: nil)
+    }
+
+    private func deletePlace(_ id: UUID, using viewModel: PlaceListViewModel) async {
+        try? await viewModel.deletePlace(id: id)
+        NotificationCenter.default.post(name: .roadBeansPlaceDeleted, object: nil)
+    }
+
+    private func searchField(text: Binding<String>) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField("Search stops, drinks, tags", text: text)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+            if !text.wrappedValue.isEmpty {
+                Button {
+                    text.wrappedValue = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .font(.roadBeansBody)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.14), in: Capsule())
     }
 
     private func filterBar(_ viewModel: PlaceListViewModel) -> some View {

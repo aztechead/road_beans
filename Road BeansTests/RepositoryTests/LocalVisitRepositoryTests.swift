@@ -21,10 +21,10 @@ struct LocalVisitRepositoryTests {
         )
         let context = ModelContext(container)
         let sync = LocalOnlyRemoteSync()
-        let places = LocalPlaceRepository(context: context, sync: sync)
+        let tombstones = LocalTombstoneRepository(context: context, sync: sync)
+        let places = LocalPlaceRepository(context: context, sync: sync, tombstones: tombstones)
         let tags = LocalTagRepository(context: context, sync: sync)
         let photos = LocalPhotoRepository(context: context, sync: sync)
-        let tombstones = LocalTombstoneRepository(context: context, sync: sync)
         let visits = LocalVisitRepository(
             context: context,
             sync: sync,

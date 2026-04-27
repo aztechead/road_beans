@@ -22,15 +22,14 @@ struct AddVisitView: View {
             }
             .navigationTitle(navigationTitle)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-
                 if let model {
-                    if model.currentPage > 0 {
-                        ToolbarItem(placement: .navigation) {
+                    ToolbarItem(placement: .cancellationAction) {
+                        if model.currentPage == 0 {
+                            Button("Cancel") {
+                                dismiss()
+                            }
+                            .disabled(isSaving)
+                        } else {
                             Button("Back") {
                                 model.currentPage -= 1
                             }
