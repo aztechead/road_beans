@@ -29,17 +29,20 @@ final class MapTabViewModel {
     private let permission: any LocationPermissionService
     private let currentLocationProvider: any CurrentLocationProvider
     private let communityService: any CommunityService
+    private let memberCache: CommunityMemberCache
 
     init(
         places: any PlaceRepository,
         permission: any LocationPermissionService,
         currentLocation: any CurrentLocationProvider,
-        community: any CommunityService
+        community: any CommunityService,
+        memberCache: CommunityMemberCache
     ) {
         self.placeRepository = places
         self.permission = permission
         self.currentLocationProvider = currentLocation
         self.communityService = community
+        self.memberCache = memberCache
     }
 
     // MARK: - Location
@@ -98,7 +101,7 @@ final class MapTabViewModel {
     // MARK: - Community
 
     func checkCommunityMembership() async {
-        isCommunityMember = (try? await communityService.currentMember()) != nil
+        isCommunityMember = await memberCache.snapshot() != nil
     }
 
     func reloadCommunityAnnotations(enabled: Bool) async {
