@@ -12,9 +12,11 @@ struct CommunityVisitDetailView: View {
             if let viewModel {
                 content(viewModel)
             } else {
-                ProgressView("Loading visit...")
+                RoadBeansLoadingState(title: "Loading visit...")
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .navigationTitle("Community Visit")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -35,11 +37,15 @@ struct CommunityVisitDetailView: View {
     private func content(_ viewModel: CommunityVisitDetailViewModel) -> some View {
         switch viewModel.state {
         case .idle, .loading:
-            ProgressView("Loading visit...")
+            RoadBeansLoadingState(title: "Loading visit...")
         case .empty:
             ContentUnavailableView("Visit not found", systemImage: "cup.and.saucer")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.surface(.canvas).ignoresSafeArea())
         case .failed(let message):
             ContentUnavailableView("Could not load visit", systemImage: "exclamationmark.triangle", description: Text(message))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.surface(.canvas).ignoresSafeArea())
         case .loaded:
             if let detail = viewModel.detail {
                 List {
@@ -94,6 +100,9 @@ struct CommunityVisitDetailView: View {
                         }
                     }
                 }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(Color.surface(.canvas).ignoresSafeArea())
                 .toolbar {
                     if viewModel.canDeleteVisit {
                         ToolbarItem(placement: .topBarLeading) {
@@ -110,7 +119,8 @@ struct CommunityVisitDetailView: View {
                         Button {
                             Task { await viewModel.toggleLike() }
                         } label: {
-                            Image(systemName: detail.likedByCurrentUser ? "heart.fill" : "heart")
+                            Image(systemName: viewModel.detail?.likedByCurrentUser == true ? "heart.fill" : "heart")
+                                .foregroundStyle(viewModel.detail?.likedByCurrentUser == true ? Color.state(.danger) : Color.ink(.secondary))
                         }
                         .disabled(viewModel.isUpdatingLike)
                     }

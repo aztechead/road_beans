@@ -9,9 +9,9 @@ struct CommunityFeedView: View {
         Group {
             switch viewModel.state {
             case .idle:
-                ProgressView("Loading community...")
+                RoadBeansLoadingState(title: "Loading community...")
             case .loading:
-                ProgressView("Loading community...")
+                RoadBeansLoadingState(title: "Loading community...")
             case .empty:
                 refreshableStatusView
             case .failed(let message):
@@ -30,6 +30,7 @@ struct CommunityFeedView: View {
         .navigationDestination(item: $selectedVisit) { visit in
             CommunityVisitDetailView(recordName: visit.id)
         }
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 
     private var refreshableStatusView: some View {
@@ -65,6 +66,7 @@ struct CommunityFeedView: View {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 420)
         }
+        .background(Color.surface(.canvas))
     }
 
     private var feedList: some View {
@@ -104,6 +106,9 @@ struct CommunityFeedView: View {
                 }
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color.surface(.canvas))
     }
 
     private var filterControls: some View {
@@ -131,6 +136,7 @@ struct CommunityFeedView: View {
                 Task { await viewModel.refresh() }
             }
         }
+        .listRowBackground(Color.clear)
     }
 
     private var sectionTitle: String {
@@ -154,6 +160,7 @@ struct CommunityFeedView: View {
             } onCommentTapped: {
                 selectedVisit = SelectedCommunityVisit(id: row.id)
             }
+            .listRowSeparator(.hidden)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 if viewModel.filter == .mine {
                     Button(role: .destructive) {
@@ -163,6 +170,8 @@ struct CommunityFeedView: View {
                     }
                 }
             }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         }
     }
 }

@@ -1,3 +1,4 @@
+import CoreLocation
 import Testing
 @testable import Road_Beans
 
@@ -9,6 +10,7 @@ struct AddVisitFlowModelPlaceTests {
             visits: FakeVisitRepository(),
             tags: FakeTagRepository(),
             search: FakeLocationSearchService(canned: []),
+            currentLocation: FakeCurrentLocationProvider(coordinate: nil),
             photoProcessor: DefaultPhotoProcessingService()
         )
     }
@@ -71,6 +73,7 @@ struct AddVisitFlowModelPlaceTests {
             visits: FakeVisitRepository(),
             tags: FakeTagRepository(),
             search: FakeLocationSearchService(canned: [], error: FakeViewModelError.failed),
+            currentLocation: FakeCurrentLocationProvider(coordinate: nil),
             photoProcessor: DefaultPhotoProcessingService()
         )
 
@@ -79,5 +82,56 @@ struct AddVisitFlowModelPlaceTests {
 
         #expect(model.searchState.errorMessage != nil)
         #expect(model.searchResults.isEmpty)
+    }
+
+    @Test func searchUsesCurrentLocationAndSortsNearestFirst() async throws {
+        let nearby = MapKitPlaceDraft(
+            name: "Nearby Latte",
+            kind: .coffeeShop,
+            mapKitIdentifier: "near",
+            mapKitName: nil,
+            address: nil,
+            latitude: 33.45,
+            longitude: -112.07,
+            phoneNumber: nil,
+            websiteURL: nil,
+            streetNumber: nil,
+            streetName: nil,
+            city: nil,
+            region: nil,
+            postalCode: nil,
+            country: nil
+        )
+        let far = MapKitPlaceDraft(
+            name: "Far Latte",
+            kind: .coffeeShop,
+            mapKitIdentifier: "far",
+            mapKitName: nil,
+            address: nil,
+            latitude: 35.20,
+            longitude: -111.65,
+            phoneNumber: nil,
+            websiteURL: nil,
+            streetNumber: nil,
+            streetName: nil,
+            city: nil,
+            region: nil,
+            postalCode: nil,
+            country: nil
+        )
+        let search = FakeLocationSearchService(canned: [far, nearby])
+        let model = AddVisitFlowModel(
+            visits: FakeVisitRepository(),
+            tags: FakeTagRepository(),
+            search: search,
+            currentLocation: FakeCurrentLocationProvider(coordinate: CLLocationCoordinate2D(latitude: 33.4484, longitude: -112.0740)),
+            photoProcessor: DefaultPhotoProcessingService()
+        )
+
+        model.searchText = "latte"
+        await model.search()?.value
+
+        #expect(search.lastNear?.latitude == 33.4484)
+        #expect(model.searchResults.map(\.name) == ["Nearby Latte", "Far Latte"])
     }
 }

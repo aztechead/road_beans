@@ -8,7 +8,7 @@ struct OnboardingView: View {
     private let cards = OnboardingCard.all
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: RoadBeansSpacing.xl) {
             Spacer(minLength: 24)
 
             TabView(selection: $selectedCard) {
@@ -28,8 +28,12 @@ struct OnboardingView: View {
                         complete()
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(.plain)
+                .roadBeansStyle(.labelL)
+                .frame(minHeight: 44)
+                .frame(maxWidth: .infinity)
+                .background(Color.accent(.default), in: Capsule())
+                .foregroundStyle(.accent(.on))
 
                 Button("Skip for now") {
                     complete()
@@ -39,21 +43,11 @@ struct OnboardingView: View {
             }
             .padding(.bottom, 32)
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(red: 0.98, green: 0.90, blue: 0.76),
-                    Color(red: 0.33, green: 0.18, blue: 0.09)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 
     private var primaryButtonTitle: String {
-        selectedCard == cards.count - 1 ? "Start Logging" : "Continue"
+        selectedCard == cards.count - 1 ? "Start logging" : "Continue"
     }
 }
 
@@ -89,21 +83,21 @@ private struct OnboardingCardView: View {
         VStack(spacing: 20) {
             Image(systemName: card.systemImage)
                 .font(.system(size: 56, weight: .semibold))
-                .foregroundStyle(Color(red: 0.31, green: 0.16, blue: 0.07))
+                .foregroundStyle(Color.accent(.default))
 
             Text(card.title)
-                .font(.largeTitle.weight(.bold))
+                .roadBeansStyle(.displayL)
                 .multilineTextAlignment(.center)
 
             Text(card.message)
-                .font(.roadBeansBody)
-                .foregroundStyle(.secondary)
+                .roadBeansStyle(.bodyM)
+                .foregroundStyle(.ink(.secondary))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(28)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .padding(RoadBeansSpacing.xl)
+        .surface(.raised, radius: RoadBeansRadius.sheet)
         .padding(.vertical, 48)
     }
 }

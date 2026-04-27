@@ -5,31 +5,29 @@ struct AddVisitPlacePage: View {
     @State private var showingCustomPlace = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            searchField
+        ScrollView {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
+                RoadBeansSection("Find a Stop") {
+                    searchField
+                }
 
-            if model.searchState == .loading {
-                ProgressView("Searching places...")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-            } else if let message = model.searchState.errorMessage {
-                failedSearchState(message)
-            } else if model.searchResults.isEmpty && !model.searchText.isEmpty {
-                emptySearchState
-            } else {
-                searchResultsList
+                if model.searchState == .loading {
+                    loadingSearchState
+                } else if let message = model.searchState.errorMessage {
+                    failedSearchState(message)
+                } else if model.searchResults.isEmpty && !model.searchText.isEmpty {
+                    emptySearchState
+                } else {
+                    searchResultsList
+                }
+
+                RoadBeansButton(title: "Custom Place", systemImage: "plus.circle.fill", variant: .secondary) {
+                    showingCustomPlace = true
+                }
             }
-
-            Spacer(minLength: 0)
-
-            Button {
-                showingCustomPlace = true
-            } label: {
-                Label("+ Custom place", systemImage: "plus.circle.fill")
-            }
-            .buttonStyle(.borderedProminent)
-            .padding()
+            .padding(RoadBeansSpacing.lg)
         }
+        .background(Color.surface(.canvas))
         .sheet(isPresented: $showingCustomPlace) {
             CustomPlaceSheet { draft in
                 model.selectCustom(draft)
@@ -39,67 +37,85 @@ struct AddVisitPlacePage: View {
     }
 
     private var searchField: some View {
-        TextField("Search for a place", text: $model.searchText)
-            .textFieldStyle(.roundedBorder)
-            .padding()
-            .onChange(of: model.searchText) {
-                model.search()
+        HStack(spacing: RoadBeansSpacing.sm) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.ink(.secondary))
+
+            TextField("Search stops, cafes, truck stops", text: $model.searchText)
+                .textInputAutocapitalization(.words)
+        }
+        .padding(RoadBeansSpacing.md)
+        .surface(.sunken, radius: RoadBeansRadius.md)
+        .onChange(of: model.searchText) {
+            model.search()
+        }
+    }
+
+    private var loadingSearchState: some View {
+        RoadBeansCard {
+            HStack(spacing: RoadBeansSpacing.md) {
+                ProgressView()
+                Text("Searching places...")
+                    .roadBeansStyle(.bodyM)
+                    .foregroundStyle(.ink(.secondary))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private var emptySearchState: some View {
-        VStack(spacing: 12) {
-            Text("No matches.")
-                .foregroundStyle(.secondary)
-
-            Button("+ Add as custom place") {
+        RoadBeansEmptyState(title: "No matches", message: "Add this stop manually and keep moving.", systemImage: "mappin.and.ellipse") {
+            RoadBeansButton(title: "Add Custom Place", systemImage: "plus") {
                 showingCustomPlace = true
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding()
+        .frame(minHeight: 300)
     }
 
     private func failedSearchState(_ message: String) -> some View {
-        VStack(spacing: 12) {
-            Text(message)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button("Try Again") {
+        RoadBeansEmptyState(title: "Search failed", message: message, systemImage: "exclamationmark.triangle") {
+            RoadBeansButton(title: "Try Again", systemImage: "arrow.clockwise", variant: .secondary) {
                 model.search()
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding()
+        .frame(minHeight: 300)
     }
 
     private var searchResultsList: some View {
-        List(model.searchResults, id: \.self) { draft in
-            Button {
-                model.selectMapKit(draft)
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: draft.kind.sfSymbol)
-                        .foregroundStyle(draft.kind.accentColor)
-                        .frame(width: 28)
+        VStack(spacing: RoadBeansSpacing.sm) {
+            ForEach(model.searchResults, id: \.self) { draft in
+                Button {
+                    model.selectMapKit(draft)
+                } label: {
+                    HStack(spacing: RoadBeansSpacing.md) {
+                        Icon(.place(draft.kind), size: 20)
+                            .frame(width: 32, height: 32)
+                            .background(draft.kind.accentColor.opacity(0.12), in: Circle())
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(draft.name)
-                            .font(.roadBeansBody)
+                        VStack(alignment: .leading, spacing: RoadBeansSpacing.xxs) {
+                            Text(draft.name)
+                                .roadBeansStyle(.headline)
+                                .foregroundStyle(.ink(.primary))
 
-                        if let address = draft.address, !address.isEmpty {
-                            Text(address)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if let address = draft.address, !address.isEmpty {
+                                Text(address)
+                                    .roadBeansStyle(.caption)
+                                    .foregroundStyle(.ink(.secondary))
+                                    .lineLimit(2)
+                            }
                         }
+
+                        Spacer(minLength: RoadBeansSpacing.md)
+
+                        Image(systemName: model.placeRef == .newMapKit(draft) ? "checkmark.circle.fill" : "chevron.right")
+                            .foregroundStyle(model.placeRef == .newMapKit(draft) ? Color.accent(.default) : Color.ink(.tertiary))
                     }
+                    .padding(RoadBeansSpacing.md)
+                    .roadBeansSurface(.base, tint: draft.kind.accentColor)
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
-        .listStyle(.plain)
     }
 }
 
@@ -113,17 +129,33 @@ private struct CustomPlaceSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("Name", text: $name)
+            ScrollView {
+                VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
+                    RoadBeansSection("Place Details") {
+                        VStack(spacing: RoadBeansSpacing.md) {
+                            TextField("Name", text: $name)
+                                .padding(RoadBeansSpacing.md)
+                                .surface(.sunken, radius: RoadBeansRadius.md)
 
-                Picker("Kind", selection: $kind) {
-                    ForEach(PlaceKind.allCases, id: \.self) { kind in
-                        Text(kind.displayName).tag(kind)
+                            TextField("Address (optional)", text: $address)
+                                .padding(RoadBeansSpacing.md)
+                                .surface(.sunken, radius: RoadBeansRadius.md)
+                        }
+                    }
+
+                    RoadBeansSection("Kind") {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: RoadBeansSpacing.sm)], spacing: RoadBeansSpacing.sm) {
+                            ForEach(PlaceKind.allCases, id: \.self) { placeKind in
+                                RoadBeansChip(title: placeKind.displayName, isSelected: kind == placeKind) {
+                                    kind = placeKind
+                                }
+                            }
+                        }
                     }
                 }
-
-                TextField("Address (optional)", text: $address)
+                .padding(RoadBeansSpacing.lg)
             }
+            .background(Color.surface(.canvas).ignoresSafeArea())
             .navigationTitle("Custom Place")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

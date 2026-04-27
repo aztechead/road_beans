@@ -9,39 +9,51 @@ struct CommunityVisitRowView: View {
     var onCommentTapped: (() -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
-            VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(row.authorDisplayName)
-                        .font(.roadBeansHeadline)
-                    if isFavorite {
-                        Image(systemName: "star.fill")
-                            .font(.caption)
-                            .foregroundStyle(.yellow)
+        let placeKind = PlaceKind(rawValue: row.placeKindRawValue) ?? .other
+
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
+                HStack(alignment: .top, spacing: RoadBeansSpacing.md) {
+                    Icon(.place(placeKind), size: 22)
+                        .frame(width: 40, height: 40)
+                        .background(placeKind.accentColor.opacity(0.12), in: Circle())
+
+                    VStack(alignment: .leading, spacing: RoadBeansSpacing.xxs) {
+                        HStack(alignment: .firstTextBaseline, spacing: RoadBeansSpacing.xs) {
+                            Text(row.authorDisplayName)
+                                .roadBeansStyle(.titleM)
+                            if isFavorite {
+                                Image(systemName: "star.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.accent(.default))
+                            }
+                        }
+
+                        Text(row.placeName)
+                            .roadBeansStyle(.bodyM)
+                            .foregroundStyle(.ink(.primary))
+                            .lineLimit(1)
                     }
-                    Spacer()
-                    BeanRating(value: row.beanRating, pixelSize: 2)
+
+                    Spacer(minLength: RoadBeansSpacing.md)
+
+                    BeanRatingView(value: .constant(row.beanRating), size: 16, editable: false)
                 }
 
                 TasteProfileChips(profile: row.authorTasteProfile)
 
-                HStack {
-                    Image(systemName: PlaceKind(rawValue: row.placeKindRawValue)?.sfSymbol ?? PlaceKind.other.sfSymbol)
-                        .foregroundStyle((PlaceKind(rawValue: row.placeKindRawValue) ?? .other).accentColor)
-                    Text(row.placeName)
-                        .font(.roadBeansBody)
-                }
-
                 if !row.drinkSummary.isEmpty {
                     Text(row.drinkSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .roadBeansStyle(.bodyS)
+                        .foregroundStyle(.ink(.secondary))
+                        .lineLimit(2)
                 }
 
                 if !row.tagSummary.isEmpty {
                     Text(row.tagSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .roadBeansStyle(.caption)
+                        .foregroundStyle(.ink(.secondary))
+                        .lineLimit(2)
                 }
             }
             .contentShape(Rectangle())
@@ -49,37 +61,70 @@ struct CommunityVisitRowView: View {
                 onRowTapped?()
             }
 
-            HStack(spacing: 16) {
-                if let onLikeTapped {
-                    Label("\(row.likeCount)", systemImage: isLiked ? "heart.fill" : "heart")
-                        .contentShape(Rectangle())
-                        .onTapGesture(perform: onLikeTapped)
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityLabel(isLiked ? "Unlike" : "Like")
-                        .accessibilityValue("\(row.likeCount)")
-                        .foregroundStyle(isLiked ? .red : .secondary)
-                } else {
-                    Label("\(row.likeCount)", systemImage: isLiked ? "heart.fill" : "heart")
-                        .foregroundStyle(isLiked ? .red : .secondary)
-                }
+            Divider()
 
-                if let onCommentTapped {
-                    Label("\(row.commentCount)", systemImage: "bubble.right")
-                        .contentShape(Rectangle())
-                        .onTapGesture(perform: onCommentTapped)
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityLabel("Comments")
-                        .accessibilityValue("\(row.commentCount)")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Label("\(row.commentCount)", systemImage: "bubble.right")
-                        .foregroundStyle(.secondary)
-                }
+            HStack(spacing: RoadBeansSpacing.lg) {
+                actionLabel(
+                    count: row.likeCount,
+                    systemImage: isLiked ? "heart.fill" : "heart",
+                    activeColor: .state(.danger),
+                    isActive: isLiked,
+                    action: onLikeTapped,
+                    accessibilityLabel: isLiked ? "Unlike" : "Like"
+                )
+
+                actionLabel(
+                    count: row.commentCount,
+                    systemImage: "bubble.right",
+                    activeColor: .accent(.default),
+                    isActive: false,
+                    action: onCommentTapped,
+                    accessibilityLabel: "Comments"
+                )
+
                 Spacer()
+
                 Text(row.visitDate.formatted(date: .abbreviated, time: .omitted))
+                    .roadBeansStyle(.caption)
+                    .foregroundStyle(.ink(.secondary))
             }
-            .font(.caption)
         }
-        .padding(.vertical, 6)
+        .padding(RoadBeansSpacing.lg)
+        .roadBeansSurface(.base, tint: placeKind.accentColor)
+    }
+
+    private func actionLabel(
+        count: Int,
+        systemImage: String,
+        activeColor: Color,
+        isActive: Bool,
+        action: (() -> Void)?,
+        accessibilityLabel: String
+    ) -> some View {
+        Group {
+            if let action {
+                Button(action: action) {
+                    actionLabelContent(count: count, systemImage: systemImage, activeColor: activeColor, isActive: isActive)
+                }
+                .buttonStyle(.plain)
+            } else {
+                actionLabelContent(count: count, systemImage: systemImage, activeColor: activeColor, isActive: isActive)
+            }
+        }
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue("\(count)")
+    }
+
+    private func actionLabelContent(
+        count: Int,
+        systemImage: String,
+        activeColor: Color,
+        isActive: Bool
+    ) -> some View {
+        Label("\(count)", systemImage: systemImage)
+            .roadBeansStyle(.caption)
+            .foregroundStyle(isActive ? activeColor : Color.ink(.secondary))
+            .frame(minWidth: 44, minHeight: 32, alignment: .leading)
+            .contentShape(Rectangle())
     }
 }

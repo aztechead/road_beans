@@ -27,7 +27,7 @@ final class SystemLocationSearchService: LocationSearchService, @unchecked Senda
         }
 
         let response = try await MKLocalSearch(request: request).start()
-        return response.mapItems.map(Self.draft(from:))
+        return Self.sortedByDistance(response.mapItems.map(Self.draft(from:)), from: near)
     }
 
     static func draft(from item: MKMapItem) -> MapKitPlaceDraft {
@@ -50,6 +50,26 @@ final class SystemLocationSearchService: LocationSearchService, @unchecked Senda
             postalCode: nil,
             country: item.addressRepresentations?.regionName
         )
+    }
+
+    static func sortedByDistance(
+        _ drafts: [MapKitPlaceDraft],
+        from coordinate: CLLocationCoordinate2D?
+    ) -> [MapKitPlaceDraft] {
+        guard let coordinate else { return drafts }
+        let userLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+
+        return drafts.sorted {
+            distance(from: $0, to: userLocation) < distance(from: $1, to: userLocation)
+        }
+    }
+
+    private static func distance(from draft: MapKitPlaceDraft, to location: CLLocation) -> CLLocationDistance {
+        guard let latitude = draft.latitude, let longitude = draft.longitude else {
+            return .greatestFiniteMagnitude
+        }
+
+        return CLLocation(latitude: latitude, longitude: longitude).distance(from: location)
     }
 
     private static func displayAddress(for item: MKMapItem) -> String? {
@@ -81,6 +101,7 @@ final class SystemLocationSearchService: LocationSearchService, @unchecked Senda
 final class FakeLocationSearchService: LocationSearchService, @unchecked Sendable {
     private let canned: [MapKitPlaceDraft]
     private let error: Error?
+    nonisolated(unsafe) private(set) var lastNear: CLLocationCoordinate2D?
 
     init(canned: [MapKitPlaceDraft], error: Error? = nil) {
         self.canned = canned
@@ -90,7 +111,8 @@ final class FakeLocationSearchService: LocationSearchService, @unchecked Sendabl
     func search(query: String, near: CLLocationCoordinate2D?) async throws -> [MapKitPlaceDraft] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw LocationSearchError.empty }
+        lastNear = near
         if let error { throw error }
-        return canned
+        return SystemLocationSearchService.sortedByDistance(canned, from: near)
     }
 }

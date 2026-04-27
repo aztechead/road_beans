@@ -13,7 +13,7 @@ struct PlaceListView: View {
                 if let viewModel {
                     content(viewModel)
                 } else {
-                    ProgressView("Loading stops...")
+                    RoadBeansLoadingState(title: "Loading stops...")
                 }
             }
             .navigationTitle("Stops")
@@ -27,6 +27,7 @@ struct PlaceListView: View {
                 }
             }
         }
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .task {
             guard viewModel == nil else { return }
             let model = PlaceListViewModel(places: placeRepository, visits: visitRepository)
@@ -68,8 +69,7 @@ struct PlaceListView: View {
             Group {
                 switch viewModel.state {
                 case .loading, .idle:
-                    ProgressView("Loading stops...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    RoadBeansLoadingState(title: "Loading stops...")
                 case .failed(let message):
                     unavailableState(
                         title: "Could not load stops",
@@ -98,8 +98,13 @@ struct PlaceListView: View {
                             case .byPlace:
                                 ForEach(viewModel.filteredPlaces) { place in
                                     NavigationLink(value: place.id) {
-                                        placeRow(place)
+                                        RoadBeansCard(tint: place.kind.accentColor) {
+                                            placeRow(place)
+                                        }
                                     }
+                                    .listRowSeparator(.hidden)
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
                                             Task { await deletePlace(place.id, using: viewModel) }
@@ -110,18 +115,23 @@ struct PlaceListView: View {
                                 }
                             case .recentVisits:
                                 ForEach(viewModel.filteredVisits, id: \.visit.id) { row in
-                                    visitRow(row)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                            Button(role: .destructive) {
-                                                Task { await deleteVisit(row.visit.id, using: viewModel) }
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
+                                    RoadBeansCard(tint: row.placeKind.accentColor) {
+                                        visitRow(row)
+                                    }
+                                    .listRowSeparator(.hidden)
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            Task { await deleteVisit(row.visit.id, using: viewModel) }
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
                                         }
+                                    }
                                 }
                             }
                         }
-                        .listStyle(.insetGrouped)
+                        .listStyle(.plain)
                         .scrollContentBackground(.hidden)
                         .refreshable {
                             await viewModel.reload()
@@ -133,7 +143,7 @@ struct PlaceListView: View {
                 PlaceDetailView(placeID: placeID)
             }
         }
-        .roadBeansScreenBackground()
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 
     private func deleteVisit(_ id: UUID, using viewModel: PlaceListViewModel) async {
@@ -166,10 +176,11 @@ struct PlaceListView: View {
                 .accessibilityLabel("Clear search")
             }
         }
-        .font(.roadBeansBody)
+        .roadBeansStyle(.bodyM)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.secondary.opacity(0.14), in: Capsule())
+        .roadBeansSurface(.inset, tint: .surface(.sunken))
+        .clipShape(Capsule())
     }
 
     private func filterBar(_ viewModel: PlaceListViewModel) -> some View {
@@ -255,34 +266,31 @@ struct PlaceListView: View {
     }
 
     private func filterChip(title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.roadBeansCaption)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(Color.secondary.opacity(0.14), in: Capsule())
+        RoadBeansChip(title: title, systemImage: systemImage)
     }
 
     private func placeRow(_ place: PlaceSummary) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: place.kind.sfSymbol)
-                .foregroundStyle(place.kind.accentColor)
+            Icon(.place(place.kind), size: 28)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(place.name)
-                    .font(.roadBeansHeadline)
+                    .roadBeansStyle(.titleM)
 
                 if let address = place.address {
                     Text(address)
-                        .font(.caption)
+                        .roadBeansStyle(.bodyS)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
+            .layoutPriority(1)
 
             Spacer()
 
             if let averageRating = place.averageRating {
-                BeanRating(value: averageRating, pixelSize: 2)
+                BeanRatingView(value: .constant(averageRating), size: 16, editable: false)
+                    .layoutPriority(1)
             }
         }
         .padding(.vertical, 6)
@@ -290,22 +298,23 @@ struct PlaceListView: View {
 
     private func visitRow(_ row: RecentVisitRow) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: row.placeKind.sfSymbol)
-                .foregroundStyle(row.placeKind.accentColor)
+            Icon(.place(row.placeKind), size: 28)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(row.placeName)
-                    .font(.roadBeansHeadline)
+                    .roadBeansStyle(.titleM)
 
                 Text(row.visit.date.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
+                    .roadBeansStyle(.bodyS)
                     .foregroundStyle(.secondary)
             }
+            .layoutPriority(1)
 
             Spacer()
 
             if let averageRating = row.visit.averageRating {
-                BeanRating(value: averageRating, pixelSize: 2)
+                BeanRatingView(value: .constant(averageRating), size: 16, editable: false)
+                    .layoutPriority(1)
             }
         }
         .padding(.vertical, 6)

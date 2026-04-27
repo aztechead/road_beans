@@ -19,6 +19,7 @@ final class AddVisitFlowModel {
     let visits: any VisitRepository
     let tagsRepo: any TagRepository
     let searchService: any LocationSearchService
+    let currentLocationProvider: any CurrentLocationProvider
     let photoProcessor: any PhotoProcessingService
 
     private var searchTask: Task<Void, Never>?
@@ -27,11 +28,13 @@ final class AddVisitFlowModel {
         visits: any VisitRepository,
         tags: any TagRepository,
         search: any LocationSearchService,
+        currentLocation: any CurrentLocationProvider,
         photoProcessor: any PhotoProcessingService
     ) {
         self.visits = visits
         self.tagsRepo = tags
         self.searchService = search
+        self.currentLocationProvider = currentLocation
         self.photoProcessor = photoProcessor
     }
 
@@ -52,7 +55,10 @@ final class AddVisitFlowModel {
             guard !Task.isCancelled, let self else { return }
 
             do {
-                let results = try await self.searchService.search(query: query, near: nil)
+                let currentCoordinate = try? await self.currentLocationProvider.currentCoordinate()
+                guard !Task.isCancelled else { return }
+
+                let results = try await self.searchService.search(query: query, near: currentCoordinate)
                 guard !Task.isCancelled else { return }
 
                 await MainActor.run {

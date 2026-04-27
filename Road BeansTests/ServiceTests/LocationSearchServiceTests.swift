@@ -43,6 +43,50 @@ struct LocationSearchServiceTests {
         #expect(results[0].mapKitIdentifier == "x")
     }
 
+    @Test func sortsResultsByDistanceWhenCoordinateIsAvailable() {
+        let nearby = MapKitPlaceDraft(
+            name: "Nearby",
+            kind: .coffeeShop,
+            mapKitIdentifier: nil,
+            mapKitName: nil,
+            address: nil,
+            latitude: 33.45,
+            longitude: -112.07,
+            phoneNumber: nil,
+            websiteURL: nil,
+            streetNumber: nil,
+            streetName: nil,
+            city: nil,
+            region: nil,
+            postalCode: nil,
+            country: nil
+        )
+        let far = MapKitPlaceDraft(
+            name: "Far",
+            kind: .coffeeShop,
+            mapKitIdentifier: nil,
+            mapKitName: nil,
+            address: nil,
+            latitude: 35.20,
+            longitude: -111.65,
+            phoneNumber: nil,
+            websiteURL: nil,
+            streetNumber: nil,
+            streetName: nil,
+            city: nil,
+            region: nil,
+            postalCode: nil,
+            country: nil
+        )
+
+        let sorted = SystemLocationSearchService.sortedByDistance(
+            [far, nearby],
+            from: CLLocationCoordinate2D(latitude: 33.4484, longitude: -112.0740)
+        )
+
+        #expect(sorted.map(\.name) == ["Nearby", "Far"])
+    }
+
     @Test func mapKitDraftUsesIOS26LocationAndAddress() {
         let address = MKAddress(
             fullAddress: "1 Coffee Way, Quartzsite, AZ 85346",

@@ -11,7 +11,7 @@ struct CommunityMemberProfileView: View {
             List {
                 switch viewModel.state {
                 case .idle, .loading:
-                    ProgressView("Loading member...")
+                    RoadBeansLoadingState(title: "Loading member...")
                 case .empty:
                     ContentUnavailableView("Member not found", systemImage: "person.crop.circle.badge.questionmark")
                 case .failed(let message):
@@ -20,7 +20,7 @@ struct CommunityMemberProfileView: View {
                     if let member = viewModel.member {
                         Section {
                             Text(member.displayName)
-                                .font(.roadBeansHeadline)
+                                .roadBeansStyle(.titleL)
                             TasteProfileEditor(profile: .constant(member.tasteProfile), isReadOnly: true)
                         }
 
@@ -45,6 +45,9 @@ struct CommunityMemberProfileView: View {
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.surface(.canvas).ignoresSafeArea())
             .navigationTitle("Member")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -70,5 +73,6 @@ struct CommunityMemberProfileView: View {
                 }
             }
         }
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 }
