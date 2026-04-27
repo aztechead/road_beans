@@ -4,7 +4,7 @@ import Foundation
 struct MissingCommunityService: CommunityService {
     func currentMember() async throws -> CommunityMemberSnapshot? { throw CommunityServiceError.missing }
     func join(displayName: String, profile: TasteProfile, existingVisits: [CommunityVisitDraft]) async throws { throw CommunityServiceError.missing }
-    func leave() async throws { throw CommunityServiceError.missing }
+    func leave(deleteRatings: Bool) async throws { throw CommunityServiceError.missing }
     func updateProfile(displayName: String, profile: TasteProfile) async throws { throw CommunityServiceError.missing }
     func publish(_ visit: CommunityVisitDraft) async throws -> String { throw CommunityServiceError.missing }
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws { throw CommunityServiceError.missing }
@@ -15,6 +15,7 @@ struct MissingCommunityService: CommunityService {
     func fetchVisits(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, nameContains: String) async throws -> [CommunityVisitRow] { throw CommunityServiceError.missing }
     func fetchMember(userRecordID: String) async throws -> CommunityMemberSnapshot? { throw CommunityServiceError.missing }
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail? { throw CommunityServiceError.missing }
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] { throw CommunityServiceError.missing }
     func like(visitRecordName: String) async throws { throw CommunityServiceError.missing }
     func unlike(visitRecordName: String) async throws { throw CommunityServiceError.missing }
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool { throw CommunityServiceError.missing }

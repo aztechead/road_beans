@@ -37,13 +37,12 @@ struct AddVisitPlacePage: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: RoadBeansSpacing.sm) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.ink(.secondary))
-
-            TextField("Search stops, cafes, truck stops", text: $model.searchText)
-                .textInputAutocapitalization(.words)
-        }
+        RoadBeansClearableTextField(
+            "Search stops, cafes, truck stops",
+            text: $model.searchText,
+            systemImage: "magnifyingglass",
+            autocapitalization: .words
+        )
         .padding(RoadBeansSpacing.md)
         .surface(.sunken, radius: RoadBeansRadius.md)
         .onChange(of: model.searchText) {
@@ -133,11 +132,11 @@ private struct CustomPlaceSheet: View {
                 VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
                     RoadBeansSection("Place Details") {
                         VStack(spacing: RoadBeansSpacing.md) {
-                            TextField("Name", text: $name)
+                            RoadBeansClearableTextField("Name", text: $name, autocapitalization: .words)
                                 .padding(RoadBeansSpacing.md)
                                 .surface(.sunken, radius: RoadBeansRadius.md)
 
-                            TextField("Address (optional)", text: $address)
+                            RoadBeansClearableTextField("Address (optional)", text: $address, autocapitalization: .words)
                                 .padding(RoadBeansSpacing.md)
                                 .surface(.sunken, radius: RoadBeansRadius.md)
                         }

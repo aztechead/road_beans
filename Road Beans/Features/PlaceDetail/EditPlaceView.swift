@@ -22,7 +22,7 @@ struct EditPlaceView: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Name", text: $name)
+                RoadBeansClearableTextField("Name", text: $name, autocapitalization: .words)
 
                 Picker("Kind", selection: $kind) {
                     ForEach(PlaceKind.allCases, id: \.self) { kind in
@@ -30,7 +30,7 @@ struct EditPlaceView: View {
                     }
                 }
 
-                TextField("Address", text: $address)
+                RoadBeansClearableTextField("Address", text: $address, autocapitalization: .words)
 
                 if let errorMessage {
                     Text(errorMessage)

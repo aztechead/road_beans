@@ -45,9 +45,12 @@ actor CloudKitCommunityService: CommunityService {
         logger.info("Community join completed")
     }
 
-    func leave() async throws {
+    func leave(deleteRatings: Bool) async throws {
         let userID = try await currentUserRecordID()
-        try await deleteAllAuthoredRecords(authorUserRecordID: userID.recordName)
+        try await deleteCurrentUserSocialRecords(userRecordID: userID.recordName)
+        if deleteRatings {
+            try await deleteAuthoredVisits(authorUserRecordID: userID.recordName)
+        }
         do {
             _ = try await delete(recordID: memberRecordID(for: userID.recordName))
         } catch let error as CKError where error.code == .unknownItem {}
@@ -195,6 +198,24 @@ actor CloudKitCommunityService: CommunityService {
         } catch let error as CKError where error.code == .unknownItem {
             return nil
         }
+    }
+
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] {
+        let userID = try await currentUserRecordID()
+        let predicate = NSPredicate(format: "userRecordID == %@", userID.recordName)
+        let query = CKQuery(recordType: CommunityRecordType.like, predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+
+        var rows: [CommunityVisitRow] = []
+        let likes = try await queryAll(query)
+        for like in likes {
+            guard
+                let recordName = like["communityVisitRecordName"] as? String,
+                let detail = try await fetchVisitDetail(recordName: recordName)
+            else { continue }
+            rows.append(detail.row)
+        }
+        return rows
     }
 
     func like(visitRecordName: String) async throws {
@@ -539,18 +560,24 @@ actor CloudKitCommunityService: CommunityService {
         }
     }
 
-    private func deleteAllAuthoredRecords(authorUserRecordID: String) async throws {
-        try await deleteRecordsMatching(
+    private func deleteAuthoredVisits(authorUserRecordID: String) async throws {
+        let authoredVisits = try await queryAll(CKQuery(
             recordType: CommunityRecordType.visit,
             predicate: NSPredicate(format: "authorUserRecordID == %@", authorUserRecordID)
-        )
+        ))
+        for visit in authoredVisits {
+            try await deleteVisit(recordName: visit.recordID.recordName)
+        }
+    }
+
+    private func deleteCurrentUserSocialRecords(userRecordID: String) async throws {
         try await deleteRecordsMatching(
             recordType: CommunityRecordType.like,
-            predicate: NSPredicate(format: "userRecordID == %@", authorUserRecordID)
+            predicate: NSPredicate(format: "userRecordID == %@", userRecordID)
         )
         try await deleteRecordsMatching(
             recordType: CommunityRecordType.comment,
-            predicate: NSPredicate(format: "userRecordID == %@", authorUserRecordID)
+            predicate: NSPredicate(format: "userRecordID == %@", userRecordID)
         )
     }
 

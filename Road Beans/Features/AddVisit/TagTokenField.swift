@@ -25,10 +25,13 @@ struct TagTokenField: View {
                 Image(systemName: "tag")
                     .foregroundStyle(.ink(.secondary))
 
-                TextField("Add a tag", text: $input)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .onSubmit(addInput)
+                RoadBeansClearableTextField(
+                    "Add a tag",
+                    text: $input,
+                    autocapitalization: .never,
+                    autocorrectionDisabled: true,
+                    onSubmit: addInput
+                )
                     .onChange(of: input) { _, newValue in
                         handleInputChange(newValue)
                     }

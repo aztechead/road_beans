@@ -157,25 +157,13 @@ struct PlaceListView: View {
     }
 
     private func searchField(text: Binding<String>) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-
-            TextField("Search stops, drinks, tags", text: text)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-
-            if !text.wrappedValue.isEmpty {
-                Button {
-                    text.wrappedValue = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
-            }
-        }
+        RoadBeansClearableTextField(
+            "Search stops, drinks, tags",
+            text: text,
+            systemImage: "magnifyingglass",
+            autocapitalization: .never,
+            autocorrectionDisabled: true
+        )
         .roadBeansStyle(.bodyM)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

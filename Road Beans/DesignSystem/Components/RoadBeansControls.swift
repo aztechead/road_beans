@@ -1,5 +1,58 @@
 import SwiftUI
 
+struct RoadBeansClearableTextField: View {
+    let placeholder: String
+    @Binding var text: String
+    var systemImage: String?
+    var autocapitalization: TextInputAutocapitalization?
+    var autocorrectionDisabled = false
+    var onSubmit: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: RoadBeansSpacing.sm) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .foregroundStyle(.ink(.secondary))
+            }
+
+            TextField(placeholder, text: $text)
+                .textInputAutocapitalization(autocapitalization)
+                .autocorrectionDisabled(autocorrectionDisabled)
+                .onSubmit {
+                    onSubmit?()
+                }
+
+            if !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.ink(.tertiary))
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear text")
+            }
+        }
+    }
+
+    init(
+        _ placeholder: String,
+        text: Binding<String>,
+        systemImage: String? = nil,
+        autocapitalization: TextInputAutocapitalization? = nil,
+        autocorrectionDisabled: Bool = false,
+        onSubmit: (() -> Void)? = nil
+    ) {
+        self.placeholder = placeholder
+        self._text = text
+        self.systemImage = systemImage
+        self.autocapitalization = autocapitalization
+        self.autocorrectionDisabled = autocorrectionDisabled
+        self.onSubmit = onSubmit
+    }
+}
+
 struct RoadBeansButton: View {
     enum Variant {
         case primary

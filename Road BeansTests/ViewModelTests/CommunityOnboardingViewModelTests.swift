@@ -22,7 +22,7 @@ private struct FailingJoinCommunityService: CommunityService {
 
     func currentMember() async throws -> CommunityMemberSnapshot? { nil }
     func join(displayName: String, profile: TasteProfile, existingVisits: [CommunityVisitDraft]) async throws { throw error }
-    func leave() async throws {}
+    func leave(deleteRatings: Bool) async throws {}
     func updateProfile(displayName: String, profile: TasteProfile) async throws {}
     func publish(_ visit: CommunityVisitDraft) async throws -> String { visit.localVisitID.uuidString }
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws {}
@@ -50,6 +50,7 @@ private struct FailingJoinCommunityService: CommunityService {
 
     func fetchMember(userRecordID: String) async throws -> CommunityMemberSnapshot? { nil }
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail? { nil }
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] { [] }
     func like(visitRecordName: String) async throws {}
     func unlike(visitRecordName: String) async throws {}
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool { false }

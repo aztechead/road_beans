@@ -58,6 +58,7 @@ final class CommunityFeedViewModel {
     private var cache: [CommunityFeedFilter: CachedFeed] = [:]
     private var hasHydrated = false
     private let service: any CommunityService
+    private let memberCache: CommunityMemberCache?
     private let favorites: any FavoriteMemberRepository
     private let diskCache: CommunityFeedDiskCache
     private let logger = Logger(subsystem: "brainmeld.Road-Beans", category: "CommunityFeed")
@@ -65,10 +66,12 @@ final class CommunityFeedViewModel {
     init(
         service: any CommunityService,
         favorites: any FavoriteMemberRepository,
+        memberCache: CommunityMemberCache? = nil,
         diskCache: CommunityFeedDiskCache = CommunityFeedDiskCache()
     ) {
         self.service = service
         self.favorites = favorites
+        self.memberCache = memberCache
         self.diskCache = diskCache
     }
 
@@ -131,6 +134,7 @@ final class CommunityFeedViewModel {
         do {
             currentMember = try await service.currentMember()
             guard let currentMember else {
+                await memberCache?.store(nil)
                 favoritesRows = []
                 everyoneRows = []
                 nextCursor = nil
@@ -139,6 +143,7 @@ final class CommunityFeedViewModel {
                 await persistCacheToDisk()
                 return
             }
+            await memberCache?.store(currentMember)
 
             let favoriteIDs = Set((try? favorites.all().map(\.memberUserRecordID)) ?? [])
             let excludeSelf: Set<String> = [currentMember.userRecordID]
@@ -168,15 +173,9 @@ final class CommunityFeedViewModel {
                 )
                 await persistCacheToDisk()
             case .favorites:
-                let favoritePage = try await loadPage(
-                    cursor: nil,
-                    limit: 50,
-                    authorIDsToInclude: favoriteIDs.isEmpty ? [] : favoriteIDs,
-                    authorIDsToExclude: excludeSelf,
-                    label: "favorites"
-                )
+                let likedRows = try await service.fetchLikedVisitsByCurrentUser()
                 favoritesRows = []
-                everyoneRows = liveRows(sorted(favoritePage.rows))
+                everyoneRows = liveRows(sorted(likedRows))
                 nextCursor = nil
                 cache[.favorites] = CachedFeed(favorites: [], everyone: liveRows(everyoneRows), nextCursor: nil)
                 await persistCacheToDisk()
@@ -238,6 +237,9 @@ final class CommunityFeedViewModel {
         do {
             if wasLiked {
                 try await service.unlike(visitRecordName: row.id)
+                if filter == .favorites {
+                    removeRow(recordName: row.id)
+                }
             } else {
                 try await service.like(visitRecordName: row.id)
             }

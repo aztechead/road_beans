@@ -40,16 +40,24 @@ actor InMemoryCommunityService: CommunityService {
         }
     }
 
-    func leave() async throws {
+    func leave(deleteRatings: Bool) async throws {
         members[currentUserRecordID] = nil
-        let authoredIDs = visits.values
-            .filter { $0.authorUserRecordID == currentUserRecordID }
-            .map(\.id)
-        for id in authoredIDs {
-            visits[id] = nil
-            commentRows[id] = nil
+        if deleteRatings {
+            let authoredIDs = visits.values
+                .filter { $0.authorUserRecordID == currentUserRecordID }
+                .map(\.id)
+            for id in authoredIDs {
+                visits[id] = nil
+                commentRows[id] = nil
+                localVisitIndex = localVisitIndex.filter { $0.value != id }
+                likes = likes.filter { !$0.hasPrefix("\(id)-") }
+            }
         }
         likes = likes.filter { !$0.hasSuffix("-\(currentUserRecordID)") }
+        for recordName in commentRows.keys {
+            commentRows[recordName]?.removeAll { $0.authorUserRecordID == currentUserRecordID }
+            visits[recordName]?.commentCount = commentRows[recordName, default: []].count
+        }
     }
 
     func updateProfile(displayName: String, profile: TasteProfile) async throws {
@@ -145,6 +153,16 @@ actor InMemoryCommunityService: CommunityService {
             comments: commentRows[recordName, default: []].sorted { $0.timestamp < $1.timestamp },
             likedByCurrentUser: likes.contains(likeKey(recordName))
         )
+    }
+
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] {
+        let likedRecordNames = Set(likes.compactMap { key -> String? in
+            guard key.hasSuffix("-\(currentUserRecordID)") else { return nil }
+            return String(key.dropLast(currentUserRecordID.count + 1))
+        })
+        return visits.values
+            .filter { likedRecordNames.contains($0.id) }
+            .sorted { $0.publishedAt > $1.publishedAt }
     }
 
     func like(visitRecordName: String) async throws {
