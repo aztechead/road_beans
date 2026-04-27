@@ -8,3 +8,6 @@ xcuserdata/
 DerivedData/
 build/
 *.xcresult
+
+# Agent planning artifacts
+docs/superpowers/
