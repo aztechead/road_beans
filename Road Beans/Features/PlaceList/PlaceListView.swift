@@ -37,6 +37,10 @@ struct PlaceListView: View {
         @Bindable var viewModel = viewModel
 
         return VStack(spacing: 0) {
+            searchField(text: $viewModel.searchText)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
             Picker("List mode", selection: $viewModel.mode) {
                 ForEach(PlaceListMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
@@ -44,7 +48,7 @@ struct PlaceListView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.top, 10)
 
             filterBar(viewModel)
                 .padding(.horizontal)
@@ -94,7 +98,6 @@ struct PlaceListView: View {
                         }
                         .listStyle(.insetGrouped)
                         .scrollContentBackground(.hidden)
-                        .searchable(text: $viewModel.searchText, prompt: "Search stops, drinks, tags")
                         .refreshable {
                             await viewModel.reload()
                         }
@@ -106,6 +109,32 @@ struct PlaceListView: View {
             }
         }
         .roadBeansScreenBackground()
+    }
+
+    private func searchField(text: Binding<String>) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField("Search stops, drinks, tags", text: text)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+            if !text.wrappedValue.isEmpty {
+                Button {
+                    text.wrappedValue = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .font(.roadBeansBody)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.14), in: Capsule())
     }
 
     private func filterBar(_ viewModel: PlaceListViewModel) -> some View {
