@@ -52,6 +52,14 @@ private struct RemoteSyncCoordinatorKey: EnvironmentKey {
     static let defaultValue: any RemoteSyncCoordinator = NoopRemoteSyncCoordinator()
 }
 
+private struct CommunityServiceKey: EnvironmentKey {
+    static let defaultValue: any CommunityService = MissingCommunityService()
+}
+
+private struct FavoriteMemberRepositoryKey: EnvironmentKey {
+    static let defaultValue: any FavoriteMemberRepository = MissingFavoriteMemberRepository()
+}
+
 extension EnvironmentValues {
     var placeRepository: any PlaceRepository {
         get { self[PlaceRepositoryKey.self] }
@@ -107,6 +115,16 @@ extension EnvironmentValues {
         get { self[RemoteSyncCoordinatorKey.self] }
         set { self[RemoteSyncCoordinatorKey.self] = newValue }
     }
+
+    var communityService: any CommunityService {
+        get { self[CommunityServiceKey.self] }
+        set { self[CommunityServiceKey.self] = newValue }
+    }
+
+    var favoriteMemberRepository: any FavoriteMemberRepository {
+        get { self[FavoriteMemberRepositoryKey.self] }
+        set { self[FavoriteMemberRepositoryKey.self] = newValue }
+    }
 }
 
 private struct MissingPlaceRepository: PlaceRepository {
@@ -153,6 +171,10 @@ private struct MissingVisitRepository: VisitRepository {
     }
 
     func detail(id: UUID) async throws -> VisitDetail? {
+        throw MissingEnvironmentDependencyError.missing("VisitRepository")
+    }
+
+    func communityDraft(for visitID: UUID) async throws -> CommunityVisitDraft? {
         throw MissingEnvironmentDependencyError.missing("VisitRepository")
     }
 }
@@ -218,6 +240,24 @@ private struct MissingCurrentLocationProvider: CurrentLocationProvider {
 private struct MissingPhotoProcessingService: PhotoProcessingService {
     nonisolated func process(_ raw: Data) async throws -> ProcessedPhoto {
         throw MissingEnvironmentDependencyError.missing("PhotoProcessingService")
+    }
+}
+
+private struct MissingFavoriteMemberRepository: FavoriteMemberRepository {
+    func add(memberUserRecordID: String) throws {
+        throw MissingEnvironmentDependencyError.missing("FavoriteMemberRepository")
+    }
+
+    func remove(memberUserRecordID: String) throws {
+        throw MissingEnvironmentDependencyError.missing("FavoriteMemberRepository")
+    }
+
+    func all() throws -> [FavoriteMemberSummary] {
+        throw MissingEnvironmentDependencyError.missing("FavoriteMemberRepository")
+    }
+
+    func contains(memberUserRecordID: String) throws -> Bool {
+        throw MissingEnvironmentDependencyError.missing("FavoriteMemberRepository")
     }
 }
 

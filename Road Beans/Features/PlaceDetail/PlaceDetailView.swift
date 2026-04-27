@@ -5,6 +5,7 @@ struct PlaceDetailView: View {
     let placeID: UUID
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.visitRepository) private var visitRepository
+    @Environment(\.communityService) private var community
     @State private var viewModel: PlaceDetailViewModel?
     @State private var expandedVisits: Set<UUID> = []
     @State private var isEditing = false
@@ -64,7 +65,7 @@ struct PlaceDetailView: View {
 
     private func ensureLoaded() async {
         if viewModel == nil {
-            viewModel = PlaceDetailViewModel(placeRepo: placeRepository, visitRepo: visitRepository)
+            viewModel = PlaceDetailViewModel(placeRepo: placeRepository, visitRepo: visitRepository, community: community)
         }
         await viewModel?.load(id: placeID)
     }
@@ -102,6 +103,8 @@ struct PlaceDetailView: View {
             }
 
             visitsList(detail)
+
+            communityVisitsList()
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -173,6 +176,21 @@ struct PlaceDetailView: View {
                             Label("Delete", systemImage: "trash")
                         }
                     }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func communityVisitsList() -> some View {
+        if let rows = viewModel?.communityRows, !rows.isEmpty {
+            Section("Community Visits") {
+                ForEach(rows) { row in
+                    NavigationLink {
+                        CommunityVisitDetailView(recordName: row.id)
+                    } label: {
+                        CommunityVisitRowView(row: row, isFavorite: false)
+                    }
+                }
             }
         }
     }

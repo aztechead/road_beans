@@ -7,13 +7,11 @@ struct BeanSlider: View {
     var step: Double = 0.1
 
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    @State private var glyphPulse = false
 
     private let trackHeight: CGFloat = 14
     private let thumbDiameter: CGFloat = 52
+    private let dragDeadzone: CGFloat = 0.08
 
     var body: some View {
         GeometryReader { geometry in
@@ -24,12 +22,8 @@ struct BeanSlider: View {
             ZStack(alignment: .leading) {
                 track
 
-                BeanGlyph(beanCount: BeanGlyph.beanCount(for: value), pixelSize: 3)
-                    .scaleEffect(glyphPulse && !reduceMotion ? 1.14 : 1)
-                    .opacity(reduceMotion && glyphPulse ? 0.78 : 1)
-                    .offset(x: thumbX - 24, y: -48)
-                    .animation(reduceMotion ? .easeInOut(duration: 0.12) : .spring(response: 0.25, dampingFraction: 0.55), value: glyphPulse)
-                    .animation(.easeInOut(duration: 0.12), value: BeanGlyph.beanCount(for: value))
+                BeanPixelArt(value: value, basePixelSize: 3, anchor: .bottom)
+                    .offset(x: thumbX - 24, y: -52)
 
                 thumb
                     .offset(x: thumbX - thumbDiameter / 2)
@@ -86,7 +80,11 @@ struct BeanSlider: View {
     private func dragGesture(width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { drag in
-                let rawProgress = Double(drag.location.x / max(width, 1))
+                let activeStart = width * dragDeadzone
+                let activeEnd = width * (1 - dragDeadzone)
+                let activeWidth = max(activeEnd - activeStart, 1)
+                let clampedX = min(max(drag.location.x, activeStart), activeEnd)
+                let rawProgress = Double((clampedX - activeStart) / activeWidth)
                 let rawValue = rawProgress * (range.upperBound - range.lowerBound) + range.lowerBound
                 updateValue(rawValue)
             }
@@ -104,10 +102,6 @@ struct BeanSlider: View {
             if crossedWhole {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             }
-        }
-
-        if crossedWhole {
-            glyphPulse.toggle()
         }
 
         value = snapped
