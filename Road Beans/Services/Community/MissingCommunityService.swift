@@ -15,6 +15,7 @@ struct MissingCommunityService: CommunityService {
     func fetchVisits(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, nameContains: String) async throws -> [CommunityVisitRow] { throw CommunityServiceError.missing }
     func fetchMember(userRecordID: String) async throws -> CommunityMemberSnapshot? { throw CommunityServiceError.missing }
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail? { throw CommunityServiceError.missing }
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] { throw CommunityServiceError.missing }
     func like(visitRecordName: String) async throws { throw CommunityServiceError.missing }
     func unlike(visitRecordName: String) async throws { throw CommunityServiceError.missing }
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool { throw CommunityServiceError.missing }

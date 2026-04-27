@@ -155,6 +155,16 @@ actor InMemoryCommunityService: CommunityService {
         )
     }
 
+    func fetchLikedVisitsByCurrentUser() async throws -> [CommunityVisitRow] {
+        let likedRecordNames = Set(likes.compactMap { key -> String? in
+            guard key.hasSuffix("-\(currentUserRecordID)") else { return nil }
+            return String(key.dropLast(currentUserRecordID.count + 1))
+        })
+        return visits.values
+            .filter { likedRecordNames.contains($0.id) }
+            .sorted { $0.publishedAt > $1.publishedAt }
+    }
+
     func like(visitRecordName: String) async throws {
         guard visits[visitRecordName] != nil else { throw CommunityServiceError.notFound }
         likes.insert(likeKey(visitRecordName))
