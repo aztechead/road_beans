@@ -3,7 +3,9 @@ import SwiftUI
 struct CommunityVisitDetailView: View {
     let recordName: String
     @Environment(\.communityService) private var community
+    @Environment(\.dismiss) private var dismiss
     @State private var viewModel: CommunityVisitDetailViewModel?
+    @State private var isShowingDeleteConfirmation = false
 
     var body: some View {
         Group {
@@ -20,6 +22,11 @@ struct CommunityVisitDetailView: View {
                 let model = CommunityVisitDetailViewModel(recordName: recordName, service: community)
                 viewModel = model
                 await model.load()
+            }
+        }
+        .onChange(of: viewModel?.deleteSucceeded ?? false) { _, didDelete in
+            if didDelete {
+                dismiss()
             }
         }
     }
@@ -88,6 +95,17 @@ struct CommunityVisitDetailView: View {
                     }
                 }
                 .toolbar {
+                    if viewModel.canDeleteVisit {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(role: .destructive) {
+                                isShowingDeleteConfirmation = true
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .disabled(viewModel.isDeletingVisit)
+                        }
+                    }
+
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             Task { await viewModel.toggleLike() }
@@ -96,6 +114,18 @@ struct CommunityVisitDetailView: View {
                         }
                         .disabled(viewModel.isUpdatingLike)
                     }
+                }
+                .confirmationDialog(
+                    "Delete Community Review?",
+                    isPresented: $isShowingDeleteConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete Review", role: .destructive) {
+                        Task { await viewModel.deleteVisit() }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This removes your published community review, likes, and comments for this visit.")
                 }
             }
         }

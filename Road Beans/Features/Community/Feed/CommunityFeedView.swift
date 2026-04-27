@@ -154,6 +154,15 @@ struct CommunityFeedView: View {
             } onCommentTapped: {
                 selectedVisit = SelectedCommunityVisit(id: row.id)
             }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                if viewModel.filter == .mine {
+                    Button(role: .destructive) {
+                        Task { await viewModel.deleteVisit(row) }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+            }
         }
     }
 }

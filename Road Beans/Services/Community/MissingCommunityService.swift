@@ -9,6 +9,7 @@ struct MissingCommunityService: CommunityService {
     func publish(_ visit: CommunityVisitDraft) async throws -> String { throw CommunityServiceError.missing }
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws { throw CommunityServiceError.missing }
     func deletePublishedVisit(localVisitID: UUID) async throws { throw CommunityServiceError.missing }
+    func deleteVisit(recordName: String) async throws { throw CommunityServiceError.missing }
     func fetchFeedPage(cursor: String?, limit: Int, authorIDsToInclude: Set<String>?, authorIDsToExclude: Set<String>) async throws -> CommunityFeedPage { throw CommunityServiceError.missing }
     func fetchVisits(matchingMapKitIdentifier identifier: String) async throws -> [CommunityVisitRow] { throw CommunityServiceError.missing }
     func fetchVisits(near coordinate: CLLocationCoordinate2D, radiusMeters: Double, nameContains: String) async throws -> [CommunityVisitRow] { throw CommunityServiceError.missing }

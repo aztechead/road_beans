@@ -87,6 +87,30 @@ actor CloudKitCommunityService: CommunityService {
         } catch let error as CKError where error.code == .unknownItem {}
     }
 
+    func deleteVisit(recordName: String) async throws {
+        let userID = try await currentUserRecordID()
+        let recordID = CKRecord.ID(recordName: recordName)
+        let record: CKRecord
+        do {
+            record = try await fetch(recordID: recordID)
+        } catch let error as CKError where error.code == .unknownItem {
+            throw CommunityServiceError.notFound
+        }
+        guard record["authorUserRecordID"] as? String == userID.recordName else {
+            throw CommunityServiceError.notAuthor
+        }
+
+        try await deleteRecordsMatching(
+            recordType: CommunityRecordType.like,
+            predicate: NSPredicate(format: "communityVisitRecordName == %@", recordName)
+        )
+        try await deleteRecordsMatching(
+            recordType: CommunityRecordType.comment,
+            predicate: NSPredicate(format: "communityVisitRecordName == %@", recordName)
+        )
+        _ = try await delete(recordID: recordID)
+    }
+
     func fetchFeedPage(
         cursor: String?,
         limit: Int,
