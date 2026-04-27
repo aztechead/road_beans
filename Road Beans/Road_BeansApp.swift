@@ -16,15 +16,11 @@ struct Road_BeansApp: App {
     private let locationPermissionService: any LocationPermissionService
     private let currentLocationProvider: any CurrentLocationProvider
     private let photoProcessingService: any PhotoProcessingService
-    private let dataExportService: any DataExportService
 
     @MainActor
     init() {
         let icloud = SystemICloudAvailabilityService()
-        let persistence = PersistenceController(
-            icloud: icloud,
-            forceLocalOnly: AppBuildConfiguration.forcesLocalPersistence
-        )
+        let persistence = PersistenceController(icloud: icloud)
         let context = ModelContext(persistence.container)
         let sync = LocalOnlyRemoteSync()
         let photoProcessing = DefaultPhotoProcessingService()
@@ -33,7 +29,6 @@ struct Road_BeansApp: App {
         tags.seedDefaultsIfNeeded()
         let photos = LocalPhotoRepository(context: context, sync: sync)
         let tombstones = LocalTombstoneRepository(context: context, sync: sync)
-        let exportService = LocalDataExportService(context: context)
         let visits = LocalVisitRepository(
             context: context,
             sync: sync,
@@ -55,7 +50,6 @@ struct Road_BeansApp: App {
         self.locationPermissionService = SystemLocationPermissionService()
         self.currentLocationProvider = SystemCurrentLocationProvider()
         self.photoProcessingService = photoProcessing
-        self.dataExportService = exportService
         self._persistence = State(initialValue: persistence)
     }
 
@@ -73,7 +67,6 @@ struct Road_BeansApp: App {
                 .environment(\.locationPermissionService, locationPermissionService)
                 .environment(\.currentLocationProvider, currentLocationProvider)
                 .environment(\.photoProcessingService, photoProcessingService)
-                .environment(\.dataExportService, dataExportService)
                 .environment(\.iCloudAvailability, icloud)
                 .environment(\.remoteSyncCoordinator, sync)
         }

@@ -44,10 +44,6 @@ private struct PhotoProcessingServiceKey: EnvironmentKey {
     static let defaultValue: any PhotoProcessingService = MissingPhotoProcessingService()
 }
 
-private struct DataExportServiceKey: EnvironmentKey {
-    static let defaultValue: any DataExportService = MissingDataExportService()
-}
-
 private struct ICloudAvailabilityServiceKey: EnvironmentKey {
     static var defaultValue: any iCloudAvailabilityServiceProtocol = FakeICloudAvailabilityService()
 }
@@ -100,11 +96,6 @@ extension EnvironmentValues {
     var photoProcessingService: any PhotoProcessingService {
         get { self[PhotoProcessingServiceKey.self] }
         set { self[PhotoProcessingServiceKey.self] = newValue }
-    }
-
-    var dataExportService: any DataExportService {
-        get { self[DataExportServiceKey.self] }
-        set { self[DataExportServiceKey.self] = newValue }
     }
 
     var iCloudAvailability: any iCloudAvailabilityServiceProtocol {
@@ -223,16 +214,6 @@ private struct MissingCurrentLocationProvider: CurrentLocationProvider {
 private struct MissingPhotoProcessingService: PhotoProcessingService {
     nonisolated func process(_ raw: Data) async throws -> ProcessedPhoto {
         throw MissingEnvironmentDependencyError.missing("PhotoProcessingService")
-    }
-}
-
-private struct MissingDataExportService: DataExportService {
-    func exportEnvelope() async throws -> RoadBeansExportEnvelope {
-        throw MissingEnvironmentDependencyError.missing("DataExportService")
-    }
-
-    func writeExportFile() async throws -> URL {
-        throw MissingEnvironmentDependencyError.missing("DataExportService")
     }
 }
 
