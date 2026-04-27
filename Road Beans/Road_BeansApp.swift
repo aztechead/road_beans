@@ -61,6 +61,12 @@ struct Road_BeansApp: App {
         self.currentLocationProvider = SystemCurrentLocationProvider()
         self.photoProcessingService = photoProcessing
         self._persistence = State(initialValue: persistence)
+
+        #if DEBUG
+        Task {
+            await CloudKitCommunitySchemaBootstrapper().bootstrapDevelopmentSchema()
+        }
+        #endif
     }
 
     var body: some Scene {

@@ -148,6 +148,10 @@ actor InMemoryCommunityService: CommunityService {
         visits[visitRecordName]?.likeCount = likes.filter { $0.hasPrefix("\(visitRecordName)-") }.count
     }
 
+    func isLikedByCurrentUser(_ recordName: String) async throws -> Bool {
+        likes.contains(likeKey(recordName))
+    }
+
     func comments(forVisitRecordName recordName: String) async throws -> [CommunityCommentRow] {
         commentRows[recordName, default: []].sorted { $0.timestamp < $1.timestamp }
     }

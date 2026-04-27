@@ -11,3 +11,7 @@ build/
 
 # Agent planning artifacts
 docs/superpowers/
+
+# Generated CloudKit schema exports
+docs/cloudkit/
+docs/*cloudkit*schema*

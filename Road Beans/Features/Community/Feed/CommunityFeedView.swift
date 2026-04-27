@@ -3,6 +3,7 @@ import SwiftUI
 struct CommunityFeedView: View {
     @Bindable var viewModel: CommunityFeedViewModel
     let onJoinTapped: () -> Void
+    @State private var selectedVisit: SelectedCommunityVisit?
 
     var body: some View {
         Group {
@@ -25,6 +26,9 @@ struct CommunityFeedView: View {
         .task {
             await viewModel.hydrateFromDisk()
             await viewModel.refresh()
+        }
+        .navigationDestination(item: $selectedVisit) { visit in
+            CommunityVisitDetailView(recordName: visit.id)
         }
     }
 
@@ -139,11 +143,21 @@ struct CommunityFeedView: View {
 
     private func rows(_ rows: [CommunityVisitRow]) -> some View {
         ForEach(rows) { row in
-            NavigationLink {
-                CommunityVisitDetailView(recordName: row.id)
-            } label: {
-                CommunityVisitRowView(row: row, isFavorite: viewModel.isFavorite(row))
+            CommunityVisitRowView(
+                row: row,
+                isFavorite: viewModel.isFavorite(row),
+                isLiked: viewModel.isLiked(row)
+            ) {
+                selectedVisit = SelectedCommunityVisit(id: row.id)
+            } onLikeTapped: {
+                Task { await viewModel.toggleLike(row) }
+            } onCommentTapped: {
+                selectedVisit = SelectedCommunityVisit(id: row.id)
             }
         }
     }
+}
+
+private struct SelectedCommunityVisit: Identifiable, Hashable {
+    let id: String
 }

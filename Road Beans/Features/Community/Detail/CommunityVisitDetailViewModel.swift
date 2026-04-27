@@ -7,6 +7,9 @@ final class CommunityVisitDetailViewModel {
     var detail: CommunityVisitDetail?
     var commentText = ""
     var state: ScreenState = .idle
+    var isPostingComment = false
+    var isUpdatingLike = false
+    var actionMessage: String?
 
     private let recordName: String
     private let service: any CommunityService
@@ -27,29 +30,52 @@ final class CommunityVisitDetailViewModel {
     }
 
     func toggleLike() async {
-        guard let detail else { return }
+        guard let current = detail, !isUpdatingLike else { return }
+        isUpdatingLike = true
+        actionMessage = nil
+        let wasLiked = current.likedByCurrentUser
+        var row = current.row
+        row.likeCount = max(0, row.likeCount + (wasLiked ? -1 : 1))
+        detail = CommunityVisitDetail(
+            row: row,
+            comments: current.comments,
+            likedByCurrentUser: !wasLiked
+        )
         do {
-            if detail.likedByCurrentUser {
-                try await service.unlike(visitRecordName: detail.row.id)
+            if wasLiked {
+                try await service.unlike(visitRecordName: current.row.id)
             } else {
-                try await service.like(visitRecordName: detail.row.id)
+                try await service.like(visitRecordName: current.row.id)
             }
-            await load()
         } catch {
-            state = .failed("Road Beans could not update the like.")
+            detail = current
+            actionMessage = "Road Beans could not update the like."
         }
+        isUpdatingLike = false
     }
 
     func addComment() async {
         let text = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty, let current = detail, !isPostingComment else { return }
+        isPostingComment = true
+        actionMessage = nil
+        commentText = ""
         do {
-            _ = try await service.addComment(toVisitRecordName: recordName, text: text)
-            commentText = ""
-            await load()
+            let comment = try await service.addComment(toVisitRecordName: recordName, text: text)
+            var comments = current.comments
+            comments.append(comment)
+            var row = current.row
+            row.commentCount = comments.count
+            detail = CommunityVisitDetail(
+                row: row,
+                comments: comments,
+                likedByCurrentUser: current.likedByCurrentUser
+            )
         } catch {
-            state = .failed("Road Beans could not post the comment.")
+            commentText = text
+            actionMessage = "Road Beans could not post the comment."
         }
+        isPostingComment = false
     }
 
     func deleteComment(id: String) async {
@@ -57,7 +83,7 @@ final class CommunityVisitDetailViewModel {
             try await service.deleteComment(recordName: id)
             await load()
         } catch {
-            state = .failed("Road Beans could not delete the comment.")
+            actionMessage = "Road Beans could not delete the comment."
         }
     }
 }

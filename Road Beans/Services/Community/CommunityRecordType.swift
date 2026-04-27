@@ -14,5 +14,6 @@ enum CommunityServiceError: Error, Sendable, Equatable {
     case alreadyMember
     case notFound
     case invalidInput
+    case schemaNotConfigured
     case underlying(String)
 }

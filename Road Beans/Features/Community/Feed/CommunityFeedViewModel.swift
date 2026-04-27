@@ -47,6 +47,7 @@ final class CommunityFeedViewModel {
     var filter: CommunityFeedFilter = .all
     var sort: CommunityFeedSort = .newest
     var isRefreshing = false
+    var likedVisitIDs: Set<String> = []
 
     private struct CachedFeed {
         var favorites: [CommunityVisitRow]
@@ -74,12 +75,13 @@ final class CommunityFeedViewModel {
     func hydrateFromDisk() async {
         guard !hasHydrated else { return }
         hasHydrated = true
+        await CommunityFeedDiskCache(filename: CommunityFeedDiskCache.legacyFilename).clear()
         let entries = await diskCache.load()
         for (key, entry) in entries {
             guard let filter = CommunityFeedFilter(rawValue: key) else { continue }
             cache[filter] = CachedFeed(
-                favorites: entry.favorites,
-                everyone: entry.everyone,
+                favorites: liveRows(entry.favorites),
+                everyone: liveRows(entry.everyone),
                 nextCursor: entry.nextCursor
             )
         }
@@ -133,6 +135,8 @@ final class CommunityFeedViewModel {
                 everyoneRows = []
                 nextCursor = nil
                 state = .empty
+                cache.removeAll()
+                await persistCacheToDisk()
                 return
             }
 
@@ -154,10 +158,14 @@ final class CommunityFeedViewModel {
                     authorIDsToExclude: excludeSelf,
                     label: "everyone"
                 )
-                favoritesRows = sorted(favoritePage.rows)
-                everyoneRows = sorted(everyonePage.rows)
+                favoritesRows = liveRows(sorted(favoritePage.rows))
+                everyoneRows = liveRows(sorted(everyonePage.rows))
                 nextCursor = sort == .newest ? everyonePage.nextCursor : nil
-                cache[.all] = CachedFeed(favorites: favoritesRows, everyone: everyoneRows, nextCursor: nextCursor)
+                cache[.all] = CachedFeed(
+                    favorites: liveRows(favoritesRows),
+                    everyone: liveRows(everyoneRows),
+                    nextCursor: nextCursor
+                )
                 await persistCacheToDisk()
             case .favorites:
                 let favoritePage = try await loadPage(
@@ -168,9 +176,9 @@ final class CommunityFeedViewModel {
                     label: "favorites"
                 )
                 favoritesRows = []
-                everyoneRows = sorted(favoritePage.rows)
+                everyoneRows = liveRows(sorted(favoritePage.rows))
                 nextCursor = nil
-                cache[.favorites] = CachedFeed(favorites: [], everyone: everyoneRows, nextCursor: nil)
+                cache[.favorites] = CachedFeed(favorites: [], everyone: liveRows(everyoneRows), nextCursor: nil)
                 await persistCacheToDisk()
             case .mine:
                 let minePage = try await loadPage(
@@ -181,12 +189,13 @@ final class CommunityFeedViewModel {
                     label: "mine"
                 )
                 favoritesRows = []
-                everyoneRows = sorted(minePage.rows)
+                everyoneRows = liveRows(sorted(minePage.rows))
                 nextCursor = sort == .newest ? minePage.nextCursor : nil
-                cache[.mine] = CachedFeed(favorites: [], everyone: everyoneRows, nextCursor: nextCursor)
+                cache[.mine] = CachedFeed(favorites: [], everyone: liveRows(everyoneRows), nextCursor: nextCursor)
                 await persistCacheToDisk()
             }
             state = .loaded
+            await hydrateLikedStateForVisibleRows()
         } catch {
             if shouldShowFullScreenLoading {
                 state = .failed("Road Beans could not load community visits.")
@@ -207,7 +216,7 @@ final class CommunityFeedViewModel {
                 authorIDsToInclude: include,
                 authorIDsToExclude: exclude
             )
-            everyoneRows.append(contentsOf: sorted(page.rows))
+            everyoneRows.append(contentsOf: liveRows(sorted(page.rows)))
             self.nextCursor = page.nextCursor
         } catch {
             state = .failed("Road Beans could not load more community visits.")
@@ -216,6 +225,27 @@ final class CommunityFeedViewModel {
 
     func isFavorite(_ row: CommunityVisitRow) -> Bool {
         (try? favorites.contains(memberUserRecordID: row.authorUserRecordID)) ?? false
+    }
+
+    func isLiked(_ row: CommunityVisitRow) -> Bool {
+        likedVisitIDs.contains(row.id)
+    }
+
+    func toggleLike(_ row: CommunityVisitRow) async {
+        let wasLiked = likedVisitIDs.contains(row.id)
+        setLiked(!wasLiked, for: row.id)
+        adjustLikeCount(for: row.id, delta: wasLiked ? -1 : 1)
+        do {
+            if wasLiked {
+                try await service.unlike(visitRecordName: row.id)
+            } else {
+                try await service.like(visitRecordName: row.id)
+            }
+        } catch {
+            setLiked(wasLiked, for: row.id)
+            adjustLikeCount(for: row.id, delta: wasLiked ? 1 : -1)
+            logger.error("Community feed like failed for \(row.id, privacy: .public): \(String(describing: error), privacy: .public)")
+        }
     }
 
     private func loadPage(
@@ -264,5 +294,50 @@ final class CommunityFeedViewModel {
                 return $0.commentCount > $1.commentCount
             }
         }
+    }
+
+    private func liveRows(_ rows: [CommunityVisitRow]) -> [CommunityVisitRow] {
+        rows.filter { !$0.id.hasPrefix("_schema_") }
+    }
+
+    private func hydrateLikedStateForVisibleRows() async {
+        let rows = favoritesRows + everyoneRows
+        await withTaskGroup(of: (String, Bool)?.self) { group in
+            for row in rows {
+                group.addTask { [service] in
+                    do {
+                        return (row.id, try await service.isLikedByCurrentUser(row.id))
+                    } catch {
+                        return nil
+                    }
+                }
+            }
+            for await result in group {
+                guard let (recordName, liked) = result else { continue }
+                setLiked(liked, for: recordName)
+            }
+        }
+    }
+
+    private func setLiked(_ liked: Bool, for recordName: String) {
+        if liked {
+            likedVisitIDs.insert(recordName)
+        } else {
+            likedVisitIDs.remove(recordName)
+        }
+    }
+
+    private func adjustLikeCount(for recordName: String, delta: Int) {
+        updateRows { rows in
+            guard let index = rows.firstIndex(where: { $0.id == recordName }) else { return }
+            rows[index].likeCount = max(0, rows[index].likeCount + delta)
+        }
+    }
+
+    private func updateRows(_ update: (inout [CommunityVisitRow]) -> Void) {
+        update(&favoritesRows)
+        update(&everyoneRows)
+        cache[filter] = CachedFeed(favorites: favoritesRows, everyone: everyoneRows, nextCursor: nextCursor)
+        Task { await persistCacheToDisk() }
     }
 }
