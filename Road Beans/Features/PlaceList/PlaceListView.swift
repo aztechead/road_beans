@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct PlaceListView: View {
+    var onAddVisit: () -> Void = {}
+
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.visitRepository) private var visitRepository
     @State private var viewModel: PlaceListViewModel?
@@ -15,6 +17,15 @@ struct PlaceListView: View {
                 }
             }
             .navigationTitle("Stops")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        onAddVisit()
+                    } label: {
+                        Label("Add Visit", systemImage: "plus")
+                    }
+                }
+            }
         }
         .task {
             guard viewModel == nil else { return }
@@ -89,11 +100,18 @@ struct PlaceListView: View {
                                     NavigationLink(value: place.id) {
                                         placeRow(place)
                                     }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            Task { await deletePlace(place.id, using: viewModel) }
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
                                 }
                             case .recentVisits:
                                 ForEach(viewModel.filteredVisits, id: \.visit.id) { row in
                                     visitRow(row)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                             Button(role: .destructive) {
                                                 Task { await deleteVisit(row.visit.id, using: viewModel) }
                                             } label: {
@@ -121,6 +139,11 @@ struct PlaceListView: View {
     private func deleteVisit(_ id: UUID, using viewModel: PlaceListViewModel) async {
         try? await viewModel.deleteVisit(id: id)
         NotificationCenter.default.post(name: .roadBeansVisitDeleted, object: nil)
+    }
+
+    private func deletePlace(_ id: UUID, using viewModel: PlaceListViewModel) async {
+        try? await viewModel.deletePlace(id: id)
+        NotificationCenter.default.post(name: .roadBeansPlaceDeleted, object: nil)
     }
 
     private func searchField(text: Binding<String>) -> some View {

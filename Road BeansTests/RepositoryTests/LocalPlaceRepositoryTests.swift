@@ -6,18 +6,19 @@ import Testing
 @Suite("LocalPlaceRepository")
 @MainActor
 struct LocalPlaceRepositoryTests {
-    func makeRepo() throws -> (LocalPlaceRepository, ModelContext, LocalOnlyRemoteSync) {
+    func makeRepo() throws -> (LocalPlaceRepository, ModelContext, LocalOnlyRemoteSync, LocalTombstoneRepository) {
         let container = try ModelContainer(
             for: AppSchema.all,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = ModelContext(container)
         let sync = LocalOnlyRemoteSync()
-        return (LocalPlaceRepository(context: context, sync: sync), context, sync)
+        let tombstones = LocalTombstoneRepository(context: context, sync: sync)
+        return (LocalPlaceRepository(context: context, sync: sync, tombstones: tombstones), context, sync, tombstones)
     }
 
     @Test func existingReferenceReturnsIDWithoutDirtyMark() async throws {
-        let (repo, _, sync) = try makeRepo()
+        let (repo, _, sync, _) = try makeRepo()
         let id = UUID()
 
         let returned = try await repo.findOrCreate(reference: .existing(id: id))
@@ -27,7 +28,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func mapKitIdentifierMatchReuses() async throws {
-        let (repo, _, sync) = try makeRepo()
+        let (repo, _, sync, _) = try makeRepo()
         let draft = mapKitDraft(name: "Love's", mapKitIdentifier: "mk-1")
 
         let id1 = try await repo.findOrCreate(reference: .newMapKit(draft))
@@ -38,7 +39,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func nilIdentifierMatchesByNameAnd49MeterProximity() async throws {
-        let (repo, _, _) = try makeRepo()
+        let (repo, _, _, _) = try makeRepo()
         let base = mapKitDraft(name: "QT", mapKitIdentifier: nil, latitude: 0, longitude: 0)
         let nearby = mapKitDraft(name: "qt", mapKitIdentifier: nil, latitude: 0, longitude: longitudeOffset(forMetersAtEquator: 49))
 
@@ -49,7 +50,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func nilIdentifierBeyond51MetersInserts() async throws {
-        let (repo, _, _) = try makeRepo()
+        let (repo, _, _, _) = try makeRepo()
         let base = mapKitDraft(name: "QT", mapKitIdentifier: nil, latitude: 0, longitude: 0)
         let beyond = mapKitDraft(name: "QT", mapKitIdentifier: nil, latitude: 0, longitude: longitudeOffset(forMetersAtEquator: 51))
 
@@ -60,7 +61,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func nilIdentifierDifferentNameDoesNotMerge() async throws {
-        let (repo, _, _) = try makeRepo()
+        let (repo, _, _, _) = try makeRepo()
         let base = mapKitDraft(name: "QT", mapKitIdentifier: nil, latitude: 0, longitude: 0)
         let nearbyDifferentName = mapKitDraft(name: "Love's", mapKitIdentifier: nil, latitude: 0, longitude: longitudeOffset(forMetersAtEquator: 20))
 
@@ -71,7 +72,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func customNeverMerges() async throws {
-        let (repo, _, sync) = try makeRepo()
+        let (repo, _, sync, _) = try makeRepo()
         let draft = CustomPlaceDraft(name: "My Stop", kind: .other, address: nil)
 
         let id1 = try await repo.findOrCreate(reference: .newCustom(draft))
@@ -82,7 +83,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func summariesAndDetailComputeAverageRatings() async throws {
-        let (repo, context, _) = try makeRepo()
+        let (repo, context, _, _) = try makeRepo()
         let id = try await repo.findOrCreate(
             reference: .newMapKit(mapKitDraft(name: "Coffee Stop", mapKitIdentifier: "mk-rating"))
         )
@@ -101,7 +102,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func summariesNearFiltersByRadius() async throws {
-        let (repo, _, _) = try makeRepo()
+        let (repo, _, _, _) = try makeRepo()
         let nearID = try await repo.findOrCreate(
             reference: .newMapKit(mapKitDraft(name: "Near", mapKitIdentifier: "near", latitude: 0, longitude: 0))
         )
@@ -119,7 +120,7 @@ struct LocalPlaceRepositoryTests {
     }
 
     @Test func updateChangesEditableFieldsAndMarksDirty() async throws {
-        let (repo, _, sync) = try makeRepo()
+        let (repo, _, sync, _) = try makeRepo()
         let id = try await repo.findOrCreate(
             reference: .newCustom(CustomPlaceDraft(name: "Old", kind: .truckStop, address: nil))
         )
@@ -138,6 +139,20 @@ struct LocalPlaceRepositoryTests {
         #expect(detail.kind == .coffeeShop)
         #expect(detail.address == "1 Main")
         #expect(await sync.recordedCalls.contains(.init(kind: .place, id: id)))
+    }
+
+    @Test func deleteRemovesPlaceAndWritesTombstone() async throws {
+        let (repo, _, _, tombstones) = try makeRepo()
+        let id = try await repo.findOrCreate(
+            reference: .newCustom(CustomPlaceDraft(name: "Delete Me", kind: .truckStop, address: nil))
+        )
+
+        try await repo.delete(DeletePlaceCommand(id: id))
+
+        #expect(try await repo.detail(id: id) == nil)
+        let tombstone = try #require(try await tombstones.all().first)
+        #expect(tombstone.entityKind == SyncEntityKind.place.rawValue)
+        #expect(tombstone.entityID == id)
     }
 
     private func mapKitDraft(

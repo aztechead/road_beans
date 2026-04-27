@@ -166,7 +166,7 @@ struct PlaceDetailView: View {
         Section("Visits") {
             ForEach(detail.visits) { visit in
                 visitCard(visit)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             Task { await deleteVisit(visit.id) }
                         } label: {

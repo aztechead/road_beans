@@ -24,11 +24,11 @@ struct Road_BeansApp: App {
         let context = ModelContext(persistence.container)
         let sync = LocalOnlyRemoteSync()
         let photoProcessing = DefaultPhotoProcessingService()
-        let places = LocalPlaceRepository(context: context, sync: sync)
+        let tombstones = LocalTombstoneRepository(context: context, sync: sync)
+        let places = LocalPlaceRepository(context: context, sync: sync, tombstones: tombstones)
         let tags = LocalTagRepository(context: context, sync: sync)
         tags.seedDefaultsIfNeeded()
         let photos = LocalPhotoRepository(context: context, sync: sync)
-        let tombstones = LocalTombstoneRepository(context: context, sync: sync)
         let visits = LocalVisitRepository(
             context: context,
             sync: sync,

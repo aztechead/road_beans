@@ -202,6 +202,20 @@ struct PlaceListViewModelTests {
         #expect(viewModel.state == .loaded)
     }
 
+    @Test func deletePlacePassesCommandAndReloads() async throws {
+        let places = FakePlaceRepository()
+        let placeID = UUID()
+        places.stored = [
+            PlaceSummary(id: placeID, name: "Loves", kind: .truckStop, address: nil, coordinate: nil, averageRating: 4.0, visitCount: 1)
+        ]
+        let viewModel = PlaceListViewModel(places: places, visits: FakeVisitRepository())
+
+        try await viewModel.deletePlace(id: placeID)
+
+        #expect(places.deletedIDs == [placeID])
+        #expect(viewModel.state == .loaded)
+    }
+
     @Test func emptyRepositoriesSetEmptyState() async {
         let viewModel = PlaceListViewModel(
             places: FakePlaceRepository(),

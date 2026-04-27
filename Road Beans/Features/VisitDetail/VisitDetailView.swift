@@ -192,6 +192,7 @@ struct VisitDetailView: View {
 extension Notification.Name {
     static let roadBeansVisitDeleted = Notification.Name("RoadBeans.visitDeleted")
     static let roadBeansPlaceUpdated = Notification.Name("RoadBeans.placeUpdated")
+    static let roadBeansPlaceDeleted = Notification.Name("RoadBeans.placeDeleted")
 }
 
 private struct FlowTags: View {
