@@ -2,14 +2,25 @@ import MapKit
 import SwiftUI
 import UIKit
 
+private enum MapSheetItem: Identifiable {
+    case personal(PlaceSummary)
+    case community(CommunityPlaceAnnotation)
+
+    var id: String {
+        switch self {
+        case .personal(let place): place.id.uuidString
+        case .community(let annotation): annotation.id
+        }
+    }
+}
+
 struct MapTabView: View {
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.locationPermissionService) private var permissionService
     @Environment(\.currentLocationProvider) private var currentLocationProvider
     @Environment(\.communityService) private var communityService
     @State private var viewModel: MapTabViewModel?
-    @State private var selectedPlace: PlaceSummary?
-    @State private var selectedCommunityAnnotation: CommunityPlaceAnnotation?
+    @State private var selectedMapItem: MapSheetItem?
     @State private var mapPosition: MapCameraPosition = .automatic
 
     var body: some View {
@@ -54,7 +65,7 @@ struct MapTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .roadBeansPlaceDeleted)) { _ in
             Task {
-                selectedPlace = nil
+                selectedMapItem = nil
                 await viewModel?.reload(allowingNearMe: viewModel?.nearMeOn ?? false)
             }
         }
@@ -115,7 +126,7 @@ struct MapTabView: View {
                         if let coordinate = place.coordinate {
                             Annotation(place.name, coordinate: coordinate) {
                                 Button {
-                                    selectedPlace = place
+                                    selectedMapItem = .personal(place)
                                 } label: {
                                     MapMarkerView(kind: place.kind, rating: place.averageRating)
                                 }
@@ -129,7 +140,7 @@ struct MapTabView: View {
                         ForEach(viewModel.communityAnnotations) { annotation in
                             Annotation(annotation.name, coordinate: annotation.coordinate) {
                                 Button {
-                                    selectedCommunityAnnotation = annotation
+                                    selectedMapItem = .community(annotation)
                                 } label: {
                                     CommunityMapMarkerView(kind: annotation.kind)
                                 }
@@ -156,11 +167,13 @@ struct MapTabView: View {
             }
         }
         .background(Color.surface(.canvas).ignoresSafeArea())
-        .sheet(item: $selectedPlace) { place in
-            placeSheet(place)
-        }
-        .sheet(item: $selectedCommunityAnnotation) { annotation in
-            communityPlaceSheet(annotation)
+        .sheet(item: $selectedMapItem) { item in
+            switch item {
+            case .personal(let place):
+                placeSheet(place)
+            case .community(let annotation):
+                communityPlaceSheet(annotation)
+            }
         }
     }
 
@@ -277,49 +290,51 @@ struct MapTabView: View {
     }
 
     private func communityPlaceSheet(_ annotation: CommunityPlaceAnnotation) -> some View {
-        VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
-            HStack(alignment: .top, spacing: RoadBeansSpacing.md) {
-                ZStack {
-                    TopoShape(seed: TopoSeeds.emptyState, ringCount: 4, amplitude: 0.12, frequency: 4)
-                        .stroke(annotation.kind.accentColor.opacity(0.22), lineWidth: 1)
-                        .frame(width: 72, height: 72)
+        NavigationStack {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
+                HStack(alignment: .top, spacing: RoadBeansSpacing.md) {
+                    ZStack {
+                        TopoShape(seed: TopoSeeds.emptyState, ringCount: 4, amplitude: 0.12, frequency: 4)
+                            .stroke(annotation.kind.accentColor.opacity(0.22), lineWidth: 1)
+                            .frame(width: 72, height: 72)
 
-                    PlaceKindIcon(kind: annotation.kind)
-                        .stroke(
-                            annotation.kind.accentColor,
-                            style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
-                        )
-                        .frame(width: 30, height: 30)
+                        PlaceKindIcon(kind: annotation.kind)
+                            .stroke(
+                                annotation.kind.accentColor,
+                                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                            )
+                            .frame(width: 30, height: 30)
+                    }
+
+                    VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
+                        Text(annotation.name)
+                            .roadBeansStyle(.titleL)
+                            .foregroundStyle(.ink(.primary))
+                            .lineLimit(2)
+
+                        RoadBeansChip(title: annotation.kind.displayName, state: .default)
+                    }
+
+                    Spacer(minLength: RoadBeansSpacing.md)
                 }
 
-                VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
-                    Text(annotation.name)
-                        .roadBeansStyle(.titleL)
-                        .foregroundStyle(.ink(.primary))
-                        .lineLimit(2)
+                HStack {
+                    Text("Community rating")
+                        .roadBeansStyle(.labelM)
+                        .foregroundStyle(.ink(.secondary))
 
-                    RoadBeansChip(title: annotation.kind.displayName, state: .default)
+                    Spacer()
+
+                    BeanRatingView(value: .constant(annotation.averageRating), size: 18, editable: false)
                 }
-
-                Spacer(minLength: RoadBeansSpacing.md)
+                .padding(RoadBeansSpacing.md)
+                .surface(.sunken, radius: RoadBeansRadius.md)
             }
-
-            HStack {
-                Text("Community rating")
-                    .roadBeansStyle(.labelM)
-                    .foregroundStyle(.ink(.secondary))
-
-                Spacer()
-
-                BeanRatingView(value: .constant(annotation.averageRating), size: 18, editable: false)
-            }
-            .padding(RoadBeansSpacing.md)
-            .surface(.sunken, radius: RoadBeansRadius.md)
+            .padding(RoadBeansSpacing.lg)
+            .roadBeansSurface(.base, tint: annotation.kind.accentColor)
+            .padding()
+            .presentationDetents([.medium])
         }
-        .padding(RoadBeansSpacing.lg)
-        .roadBeansSurface(.base, tint: annotation.kind.accentColor)
-        .padding()
-        .presentationDetents([.medium])
     }
 }
 
