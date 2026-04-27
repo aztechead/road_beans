@@ -407,7 +407,7 @@ actor CloudKitCommunityService: CommunityService {
         authorIDsToInclude: Set<String>?,
         authorIDsToExclude: Set<String>
     ) async throws -> CommunityFeedPage {
-        let broadQuery = CKQuery(recordType: CommunityRecordType.visit, predicate: NSPredicate(value: true))
+        let broadQuery = CKQuery(recordType: CommunityRecordType.visit, predicate: allVisitsPredicate())
         let records = try await queryAll(broadQuery)
         let filtered = records.filter { record in
             guard let authorUserRecordID = record["authorUserRecordID"] as? String else { return false }
@@ -433,7 +433,7 @@ actor CloudKitCommunityService: CommunityService {
             let placeName = record["placeName"] as? String,
             let placeKindRawValue = record["placeKind"] as? String,
             let visitDate = record["visitDate"] as? Date,
-            let beanRating = record["beanRating"] as? Double,
+            let beanRating = Self.doubleValue(record["beanRating"]),
             let drinkSummary = record["drinkSummary"] as? String,
             let tagSummary = record["tagSummary"] as? String,
             let publishedAt = record["publishedAt"] as? Date
@@ -448,8 +448,8 @@ actor CloudKitCommunityService: CommunityService {
             placeName: placeName,
             placeKindRawValue: placeKindRawValue,
             placeMapKitIdentifier: record["placeMapKitIdentifier"] as? String,
-            placeLatitude: record["placeLatitude"] as? Double,
-            placeLongitude: record["placeLongitude"] as? Double,
+            placeLatitude: Self.doubleValue(record["placeLatitude"]),
+            placeLongitude: Self.doubleValue(record["placeLongitude"]),
             visitDate: visitDate,
             beanRating: beanRating,
             drinkSummary: drinkSummary,
@@ -549,6 +549,13 @@ actor CloudKitCommunityService: CommunityService {
         }
     }
 
+    static func doubleValue(_ value: Any?) -> Double? {
+        if let number = value as? NSNumber {
+            return number.doubleValue
+        }
+        return value as? Double
+    }
+
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool {
         let userID = try await currentUserRecordID()
         let recordID = CKRecord.ID(recordName: "like-\(recordName)-\(userID.recordName)")
@@ -606,7 +613,11 @@ actor CloudKitCommunityService: CommunityService {
         if !authorIDsToExclude.isEmpty {
             predicates.append(NSPredicate(format: "NOT (authorUserRecordID IN %@)", Array(authorIDsToExclude)))
         }
-        return predicates.isEmpty ? NSPredicate(value: true) : NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        return predicates.isEmpty ? allVisitsPredicate() : NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+
+    private nonisolated func allVisitsPredicate() -> NSPredicate {
+        NSPredicate(format: "beanRating >= 0")
     }
 
     private nonisolated func encodeCursor(_ cursor: CKQueryOperation.Cursor) -> String? {

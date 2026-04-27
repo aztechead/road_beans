@@ -31,18 +31,35 @@ final class MapTabViewModel {
     private let communityService: any CommunityService
     private let memberCache: CommunityMemberCache
 
+    var hasVisibleMapContent: Bool {
+        !places.isEmpty || currentLocation != nil || (communityReviewsOn && !communityAnnotations.isEmpty)
+    }
+
     init(
         places: any PlaceRepository,
         permission: any LocationPermissionService,
         currentLocation: any CurrentLocationProvider,
         community: any CommunityService,
-        memberCache: CommunityMemberCache
+        memberCache: CommunityMemberCache = CommunityMemberCache()
     ) {
         self.placeRepository = places
         self.permission = permission
         self.currentLocationProvider = currentLocation
         self.communityService = community
         self.memberCache = memberCache
+    }
+
+    convenience init(
+        places: any PlaceRepository,
+        permission: any LocationPermissionService,
+        currentLocation: any CurrentLocationProvider
+    ) {
+        self.init(
+            places: places,
+            permission: permission,
+            currentLocation: currentLocation,
+            community: MissingCommunityService()
+        )
     }
 
     // MARK: - Location
@@ -113,11 +130,12 @@ final class MapTabViewModel {
         }
         communityLoadState = .loading
         do {
+            let authorIDsToExclude = await currentMemberIDToExclude()
             let page = try await communityService.fetchFeedPage(
                 cursor: nil,
                 limit: 200,
                 authorIDsToInclude: nil,
-                authorIDsToExclude: []
+                authorIDsToExclude: authorIDsToExclude
             )
             rawCommunityAnnotations = CommunityPlaceAnnotation.group(from: page.rows)
             applyFilters()
@@ -130,19 +148,18 @@ final class MapTabViewModel {
     }
 
     private func applyFilters() {
-        var filtered = rawCommunityAnnotations
-        filtered = filtered.filter { annotation in
-            !places.contains { personal in
-                guard let coord = personal.coordinate else { return false }
-                return annotation.coordinate.distance(to: coord) < 100
-            }
+        communityAnnotations = rawCommunityAnnotations
+    }
+
+    private func currentMemberIDToExclude() async -> Set<String> {
+        if let member = await memberCache.snapshot() {
+            return [member.userRecordID]
         }
-        if nearMeOn, let location = currentLocation {
-            filtered = filtered.filter { annotation in
-                annotation.coordinate.distance(to: location.coordinate) < 50_000
-            }
+        guard let member = try? await communityService.currentMember() else {
+            return []
         }
-        communityAnnotations = filtered
+        await memberCache.store(member)
+        return [member.userRecordID]
     }
 }
 
