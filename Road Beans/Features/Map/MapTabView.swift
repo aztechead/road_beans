@@ -6,6 +6,7 @@ struct MapTabView: View {
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.locationPermissionService) private var permissionService
     @Environment(\.currentLocationProvider) private var currentLocationProvider
+    @Environment(\.communityService) private var communityService
     @State private var viewModel: MapTabViewModel?
     @State private var selectedPlace: PlaceSummary?
     @State private var mapPosition: MapCameraPosition = .automatic
@@ -27,7 +28,8 @@ struct MapTabView: View {
             let model = MapTabViewModel(
                 places: placeRepository,
                 permission: permissionService,
-                currentLocation: currentLocationProvider
+                currentLocation: currentLocationProvider,
+                community: communityService
             )
             viewModel = model
             await model.refreshPermissionStatus()

@@ -5,6 +5,7 @@ import Observation
 @Observable
 @MainActor
 final class MapTabViewModel {
+    // MARK: - Personal places
     var places: [PlaceSummary] = []
     var nearMeOn = false
     var permissionStatus: LocationAuthorization = .notDetermined
@@ -15,19 +16,33 @@ final class MapTabViewModel {
     var mapCenter: MapCenter?
     var state: ScreenState = .idle
 
+    // MARK: - Community
+    var communityReviewsOn = false
+    var communityAnnotations: [CommunityPlaceAnnotation] = []
+    var communityLoadState: ScreenState = .idle
+    var isCommunityMember = false
+
+    private var rawCommunityAnnotations: [CommunityPlaceAnnotation] = []
+
+    // MARK: - Dependencies
     private let placeRepository: any PlaceRepository
     private let permission: any LocationPermissionService
     private let currentLocationProvider: any CurrentLocationProvider
+    private let communityService: any CommunityService
 
     init(
         places: any PlaceRepository,
         permission: any LocationPermissionService,
-        currentLocation: any CurrentLocationProvider
+        currentLocation: any CurrentLocationProvider,
+        community: any CommunityService
     ) {
         self.placeRepository = places
         self.permission = permission
         self.currentLocationProvider = currentLocation
+        self.communityService = community
     }
+
+    // MARK: - Location
 
     func refreshPermissionStatus() async {
         permissionStatus = await permission.status
@@ -75,6 +90,56 @@ final class MapTabViewModel {
                 : .failed("Road Beans could not load map stops. Try again.")
             places = []
         }
+        if communityReviewsOn {
+            applyFilters()
+        }
+    }
+
+    // MARK: - Community
+
+    func checkCommunityMembership() async {
+        isCommunityMember = (try? await communityService.currentMember()) != nil
+    }
+
+    func reloadCommunityAnnotations(enabled: Bool) async {
+        guard enabled else {
+            rawCommunityAnnotations = []
+            communityAnnotations = []
+            communityLoadState = .idle
+            return
+        }
+        communityLoadState = .loading
+        do {
+            let page = try await communityService.fetchFeedPage(
+                cursor: nil,
+                limit: 200,
+                authorIDsToInclude: nil,
+                authorIDsToExclude: []
+            )
+            rawCommunityAnnotations = CommunityPlaceAnnotation.group(from: page.rows)
+            applyFilters()
+            communityLoadState = communityAnnotations.isEmpty ? .empty : .loaded
+        } catch {
+            rawCommunityAnnotations = []
+            communityAnnotations = []
+            communityLoadState = .failed("Could not load community reviews.")
+        }
+    }
+
+    private func applyFilters() {
+        var filtered = rawCommunityAnnotations
+        filtered = filtered.filter { annotation in
+            !places.contains { personal in
+                guard let coord = personal.coordinate else { return false }
+                return annotation.coordinate.distance(to: coord) < 100
+            }
+        }
+        if nearMeOn, let location = currentLocation {
+            filtered = filtered.filter { annotation in
+                annotation.coordinate.distance(to: location.coordinate) < 50_000
+            }
+        }
+        communityAnnotations = filtered
     }
 }
 
