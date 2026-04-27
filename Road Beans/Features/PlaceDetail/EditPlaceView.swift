@@ -37,6 +37,8 @@ struct EditPlaceView: View {
                         .foregroundStyle(.red)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.surface(.canvas).ignoresSafeArea())
             .navigationTitle("Edit Stop")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -52,6 +54,7 @@ struct EditPlaceView: View {
                 }
             }
         }
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 
     private var trimmedName: String {

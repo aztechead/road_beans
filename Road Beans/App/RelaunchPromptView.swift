@@ -2,16 +2,16 @@ import SwiftUI
 
 struct RelaunchPromptView: View {
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: RoadBeansSpacing.lg) {
             Image(systemName: "exclamationmark.icloud")
                 .font(.largeTitle)
 
             Text("Your iCloud account changed.")
-                .font(.roadBeansHeadline)
+                .roadBeansStyle(.titleL)
 
             Text("Relaunch Road Beans to continue.")
-                .font(.roadBeansBody)
-                .foregroundStyle(.secondary)
+                .roadBeansStyle(.bodyM)
+                .foregroundStyle(.ink(.secondary))
         }
         .multilineTextAlignment(.center)
         .padding()

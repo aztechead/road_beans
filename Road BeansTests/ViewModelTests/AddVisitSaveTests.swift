@@ -11,6 +11,7 @@ struct AddVisitSaveTests {
             visits: visits,
             tags: FakeTagRepository(),
             search: FakeLocationSearchService(canned: []),
+            currentLocation: FakeCurrentLocationProvider(coordinate: nil),
             photoProcessor: DefaultPhotoProcessingService()
         )
         return (model, visits)

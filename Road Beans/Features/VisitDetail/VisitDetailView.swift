@@ -14,7 +14,7 @@ struct VisitDetailView: View {
             if let viewModel {
                 switch viewModel.state {
                 case .idle, .loading:
-                    ProgressView("Loading visit...")
+                    RoadBeansLoadingState(title: "Loading visit...")
                 case .loaded:
                     if let detail = viewModel.detail {
                         content(detail)
@@ -27,9 +27,11 @@ struct VisitDetailView: View {
                     failedState(message)
                 }
             } else {
-                ProgressView("Loading visit...")
+                RoadBeansLoadingState(title: "Loading visit...")
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .navigationTitle("Visit")
         .navigationBarTitleDisplayMode(.inline)
         .task { await ensureLoaded() }
@@ -80,6 +82,8 @@ struct VisitDetailView: View {
             systemImage: "cup.and.saucer",
             description: Text("This visit may have been deleted.")
         )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .padding()
     }
 
@@ -96,37 +100,39 @@ struct VisitDetailView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .padding()
     }
 
     private func content(_ detail: VisitDetail) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.md) {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
                 header(detail)
                 photoPager(detail.photos)
                 tags(detail.tagNames)
                 drinks(detail.drinks)
             }
-            .padding(RoadBeansTheme.Spacing.md)
+            .padding(RoadBeansSpacing.md)
             .padding(.bottom, 88)
         }
-        .roadBeansScreenBackground()
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 
     private func header(_ detail: VisitDetail) -> some View {
-        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
+        RoadBeansCard(tint: detail.placeKind.accentColor) {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
             Text(detail.date.formatted(date: .complete, time: .shortened))
-                .font(.roadBeansHeadline)
+                .roadBeansStyle(.titleM)
 
             HStack {
-                Image(systemName: detail.placeKind.sfSymbol)
-                    .foregroundStyle(detail.placeKind.accentColor)
+                Icon(.place(detail.placeKind), size: 16)
                 Text(detail.placeName)
-                    .font(.roadBeansBody)
+                    .roadBeansStyle(.bodyM)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.ink(.secondary))
+            }
         }
-        .glassCard(tint: detail.placeKind.accentColor)
     }
 
     @ViewBuilder
@@ -147,7 +153,8 @@ struct VisitDetailView: View {
             }
             .tabViewStyle(.page)
             .frame(height: 280)
-            .glassCard()
+            .padding(RoadBeansSpacing.lg)
+            .surface(.raised, radius: RoadBeansRadius.lg)
         }
     }
 
@@ -159,33 +166,33 @@ struct VisitDetailView: View {
     }
 
     private func drinks(_ drinks: [DrinkRow]) -> some View {
-        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
+        RoadBeansCard {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
             Text("Drinks")
-                .font(.roadBeansHeadline)
+                .roadBeansStyle(.titleM)
 
             ForEach(drinks) { drink in
                 HStack(spacing: 12) {
-                    Image(systemName: drink.category.sfSymbol)
-                        .foregroundStyle(.secondary)
+                    Icon(.drink(drink.category), size: 16)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(drink.name)
-                            .font(.roadBeansBody)
+                            .roadBeansStyle(.bodyM)
 
                         if !drink.tagNames.isEmpty {
                             Text(drink.tagNames.joined(separator: " · "))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .roadBeansStyle(.bodyS)
+                                .foregroundStyle(.ink(.secondary))
                         }
                     }
 
                     Spacer()
-                    BeanRating(value: drink.rating, pixelSize: 2)
+                    BeanRatingView(value: .constant(drink.rating), size: 16, editable: false)
                 }
                 .padding(.vertical, 6)
             }
+            }
         }
-        .glassCard()
     }
 }
 
@@ -202,10 +209,10 @@ private struct FlowTags: View {
         HStack {
             ForEach(tags, id: \.self) { tag in
                 Text(tag)
-                    .font(.roadBeansCaption)
+                    .roadBeansStyle(.labelM)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.secondary.opacity(0.18), in: Capsule())
+                    .overlay(Capsule().stroke(Color.divider(.strong), lineWidth: 1))
             }
         }
     }

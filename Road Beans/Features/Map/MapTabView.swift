@@ -16,11 +16,12 @@ struct MapTabView: View {
                 if let viewModel {
                     content(viewModel)
                 } else {
-                    ProgressView()
+                    RoadBeansLoadingState(title: "Loading map...")
                 }
             }
             .navigationTitle("Map")
         }
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .task {
             guard viewModel == nil else { return }
             let model = MapTabViewModel(
@@ -95,7 +96,7 @@ struct MapTabView: View {
                                 Button {
                                     selectedPlace = place
                                 } label: {
-                                    PlaceKindStyle.mapMarker(for: place.kind, rating: place.averageRating)
+                                    MapMarkerView(kind: place.kind, rating: place.averageRating)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -119,7 +120,7 @@ struct MapTabView: View {
                 }
             }
         }
-        .roadBeansScreenBackground()
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .sheet(item: $selectedPlace) { place in
             placeSheet(place)
         }
@@ -128,11 +129,11 @@ struct MapTabView: View {
     private var deniedRationale: some View {
         VStack(spacing: 12) {
             Text("Location is off.")
-                .font(.roadBeansHeadline)
+                .roadBeansStyle(.titleL)
 
             Text("Open Settings to enable nearby stops.")
-                .font(.roadBeansBody)
-                .foregroundStyle(.secondary)
+                .roadBeansStyle(.bodyM)
+                .foregroundStyle(.ink(.secondary))
                 .multilineTextAlignment(.center)
 
             Button("Open Settings") {
@@ -149,8 +150,8 @@ struct MapTabView: View {
         VStack(spacing: 12) {
             ProgressView()
             Text("Finding nearby stops...")
-                .font(.roadBeansBody)
-                .foregroundStyle(.secondary)
+                .roadBeansStyle(.bodyM)
+                .foregroundStyle(.ink(.secondary))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
@@ -176,26 +177,103 @@ struct MapTabView: View {
 
     private func placeSheet(_ place: PlaceSummary) -> some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(place.name)
-                    .font(.roadBeansHeadline)
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
+                HStack(alignment: .top, spacing: RoadBeansSpacing.md) {
+                    ZStack {
+                        TopoShape(seed: TopoSeeds.emptyState, ringCount: 4, amplitude: 0.12, frequency: 4)
+                            .stroke(place.kind.accentColor.opacity(0.22), lineWidth: 1)
+                            .frame(width: 72, height: 72)
 
-                PlaceKindStyle.badge(for: place.kind)
+                        PlaceKindIcon(kind: place.kind)
+                            .stroke(
+                                place.kind.accentColor,
+                                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                            )
+                            .frame(width: 30, height: 30)
+                    }
 
-                if let averageRating = place.averageRating {
-                    BeanRating(value: averageRating, pixelSize: 3)
+                    VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
+                        Text(place.name)
+                            .roadBeansStyle(.titleL)
+                            .foregroundStyle(.ink(.primary))
+                            .lineLimit(2)
+
+                        RoadBeansChip(title: place.kind.displayName, state: .default)
+                    }
+
+                    Spacer(minLength: RoadBeansSpacing.md)
                 }
 
-                NavigationLink("View visits", value: place.id)
-                    .buttonStyle(.borderedProminent)
+                if let averageRating = place.averageRating {
+                    HStack {
+                        Text("Average rating")
+                            .roadBeansStyle(.labelM)
+                            .foregroundStyle(.ink(.secondary))
+
+                        Spacer()
+
+                        BeanRatingView(value: .constant(averageRating), size: 18, editable: false)
+                    }
+                    .padding(RoadBeansSpacing.md)
+                    .surface(.sunken, radius: RoadBeansRadius.md)
+                }
+
+                NavigationLink(value: place.id) {
+                    Label("View Visits", systemImage: "chevron.right.circle.fill")
+                        .roadBeansStyle(.label)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                        .background(Color.accent(.default), in: Capsule())
+                        .foregroundStyle(Color.accent(.on))
+                }
+                .buttonStyle(.plain)
             }
-            .padding()
-            .glassCard(tint: place.kind.accentColor)
+            .padding(RoadBeansSpacing.lg)
+            .roadBeansSurface(.base, tint: place.kind.accentColor)
             .padding()
             .navigationDestination(for: UUID.self) { id in
                 PlaceDetailView(placeID: id)
             }
             .presentationDetents([.medium])
         }
+    }
+}
+
+private struct MapMarkerView: View {
+    let kind: PlaceKind
+    let rating: Double?
+
+    var body: some View {
+        VStack(spacing: RoadBeansSpacing.xs) {
+            ZStack {
+                Circle()
+                    .fill(Color.surface(.raised))
+                    .frame(width: 38, height: 38)
+                    .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                    .overlay {
+                        Circle()
+                            .stroke(kind.accentColor.opacity(0.38), lineWidth: 1.5)
+                    }
+
+                PlaceKindIcon(kind: kind)
+                    .stroke(
+                        kind.accentColor,
+                        style: StrokeStyle(lineWidth: 1.7, lineCap: .round, lineJoin: .round)
+                    )
+                    .frame(width: 19, height: 19)
+            }
+
+            if let rating {
+                Text(String(format: "%.1f", rating))
+                    .roadBeansStyle(.labelM)
+                    .padding(.horizontal, RoadBeansSpacing.sm)
+                    .padding(.vertical, RoadBeansSpacing.xs)
+                    .surface(.raised, radius: RoadBeansRadius.md)
+                    .foregroundStyle(.ink(.primary))
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(kind.displayName) stop")
+        .accessibilityValue(rating.map { BeanRatingView.accessibilityValue($0) } ?? "No rating")
     }
 }

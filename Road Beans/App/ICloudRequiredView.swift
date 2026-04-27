@@ -2,20 +2,20 @@ import SwiftUI
 
 struct ICloudRequiredView: View {
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: RoadBeansSpacing.lg) {
             Image(systemName: "icloud.slash")
                 .font(.largeTitle)
 
             Text("iCloud Required")
-                .font(.roadBeansHeadline)
+                .roadBeansStyle(.titleL)
 
             Text("Sign in to iCloud and relaunch Road Beans to keep your places, visits, drinks, and photos synced.")
-                .font(.roadBeansBody)
-                .foregroundStyle(.secondary)
+                .roadBeansStyle(.bodyM)
+                .foregroundStyle(.ink(.secondary))
                 .multilineTextAlignment(.center)
         }
         .padding()
-        .roadBeansScreenBackground()
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 }
 

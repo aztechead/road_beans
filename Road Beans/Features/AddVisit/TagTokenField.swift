@@ -16,17 +16,24 @@ struct TagTokenField: View {
     @State private var currentSuggestions: [TagSuggestion] = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
             if !tags.isEmpty {
                 tagChips
             }
 
-            TextField("Add a tag", text: $input)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit(addInput)
-                .onChange(of: input) { _, newValue in
-                    handleInputChange(newValue)
-                }
+            HStack(spacing: RoadBeansSpacing.sm) {
+                Image(systemName: "tag")
+                    .foregroundStyle(.ink(.secondary))
+
+                TextField("Add a tag", text: $input)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .onSubmit(addInput)
+                    .onChange(of: input) { _, newValue in
+                        handleInputChange(newValue)
+                    }
+            }
+            .roadBeansStyle(.bodyM)
 
             if !currentSuggestions.isEmpty {
                 suggestionChips
@@ -39,24 +46,16 @@ struct TagTokenField: View {
 
     private var tagChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: RoadBeansSpacing.sm) {
                 ForEach(tags, id: \.self) { tag in
-                    HStack(spacing: 6) {
-                        Text(tag)
-
-                        Button {
+                    RoadBeansChip(
+                        title: tag,
+                        state: .removable,
+                        onRemove: {
                             tags.removeAll { $0 == tag }
                             Task { await refreshSuggestions(for: input) }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .imageScale(.small)
                         }
-                        .buttonStyle(.plain)
-                    }
-                    .font(.caption)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.secondary.opacity(0.16), in: Capsule())
+                    )
                 }
             }
             .padding(.vertical, 2)
@@ -65,14 +64,13 @@ struct TagTokenField: View {
 
     private var suggestionChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: RoadBeansSpacing.sm) {
                 ForEach(currentSuggestions.prefix(5)) { suggestion in
-                    Button(suggestion.name) {
+                    RoadBeansChip(title: suggestion.name, systemImage: "plus", action: {
                         TagTokenLogic.add(suggestion.name, to: &tags)
                         input = ""
                         Task { await refreshSuggestions(for: "") }
-                    }
-                    .buttonStyle(.bordered)
+                    })
                 }
             }
         }

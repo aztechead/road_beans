@@ -31,6 +31,8 @@ struct CommunityOnboardingView: View {
                         .foregroundStyle(.red)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.surface(.canvas).ignoresSafeArea())
             .navigationTitle("Join Community")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -50,5 +52,6 @@ struct CommunityOnboardingView: View {
                 }
             }
         }
+        .background(Color.surface(.canvas).ignoresSafeArea())
     }
 }

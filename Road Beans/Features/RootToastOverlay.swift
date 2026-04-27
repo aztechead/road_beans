@@ -9,15 +9,20 @@ struct RootToastOverlay: View {
 
             if let text {
                 Text(text)
-                    .font(.roadBeansBody)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .glassCard()
+                    .roadBeansStyle(.bodyM)
+                    .foregroundStyle(.ink(.primary))
+                    .padding(.horizontal, RoadBeansSpacing.lg)
+                    .padding(.vertical, RoadBeansSpacing.sm)
+                    .surface(.raised, radius: RoadBeansRadius.md)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: RoadBeansRadius.md, style: .continuous)
+                            .stroke(Color.divider(.hairline), lineWidth: 0.5)
+                    )
                     .padding(.bottom, 32)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: text)
+        .animation(RoadBeansMotion.snap, value: text)
         .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitSaved)) { notification in
             guard let toastText = notification.userInfo?["text"] as? String else { return }
             text = toastText

@@ -39,6 +39,11 @@ struct RootView: View {
                     .tabItem { Label("Community", systemImage: "person.3.fill") }
                     .tag(AppTab.community)
             }
+            .tint(Color.accent(.default))
+            .toolbarBackground(.visible, for: .tabBar)
+            .toolbarBackground(Color.surface(.raised), for: .tabBar)
+            .toolbarColorScheme(.light, for: .tabBar)
+            .background(Color.surface(.canvas).ignoresSafeArea())
             .fullScreenCover(isPresented: $isShowingAddVisit) {
                 AddVisitView()
             }

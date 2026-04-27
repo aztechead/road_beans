@@ -5,7 +5,7 @@ struct TasteProfileEditor: View {
     var isReadOnly = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.md) {
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
             ForEach(TasteAxis.allCases, id: \.self) { axis in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
@@ -14,7 +14,7 @@ struct TasteProfileEditor: View {
                         Text(axis.highLabel)
                     }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.ink(.secondary))
 
                     Slider(
                         value: Binding(

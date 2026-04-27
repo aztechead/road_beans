@@ -15,11 +15,13 @@ struct CommunityTabView: View {
                         isShowingOnboarding = true
                     }
                 } else {
-                    ProgressView("Loading community...")
+                    RoadBeansLoadingState(title: "Loading community...")
                 }
             }
             .navigationTitle("Community")
+            .background(Color.surface(.canvas).ignoresSafeArea())
         }
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .task {
             if feedViewModel == nil {
                 feedViewModel = CommunityFeedViewModel(service: community, favorites: favorites)

@@ -15,7 +15,7 @@ struct PlaceDetailView: View {
             if let viewModel {
                 switch viewModel.state {
                 case .idle, .loading:
-                    ProgressView("Loading stop...")
+                    RoadBeansLoadingState(title: "Loading stop...")
                 case .loaded:
                     if let detail = viewModel.detail {
                         content(detail)
@@ -28,9 +28,11 @@ struct PlaceDetailView: View {
                     failedState(message)
                 }
             } else {
-                ProgressView("Loading stop...")
+                RoadBeansLoadingState(title: "Loading stop...")
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .navigationTitle("Place")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -76,6 +78,8 @@ struct PlaceDetailView: View {
             systemImage: "mappin.slash",
             description: Text("This stop may have been deleted.")
         )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .padding()
     }
 
@@ -92,6 +96,8 @@ struct PlaceDetailView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .padding()
     }
 
@@ -108,31 +114,30 @@ struct PlaceDetailView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .roadBeansScreenBackground()
+        .background(Color.surface(.canvas).ignoresSafeArea())
         .navigationDestination(for: VisitRoute.self) { route in
             VisitDetailView(visitID: route.id)
         }
     }
 
     private func header(_ detail: PlaceDetail) -> some View {
-        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
+        RoadBeansCard(tint: detail.kind.accentColor) {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: detail.kind.sfSymbol)
-                    .font(.largeTitle)
-                    .foregroundStyle(detail.kind.accentColor)
+                Icon(.place(detail.kind), size: 32)
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(detail.name)
-                        .font(.roadBeansHeadline)
+                        .roadBeansStyle(.titleL)
 
-                    PlaceKindStyle.badge(for: detail.kind)
+                    RoadBeansChip(title: detail.kind.displayName, state: .default)
                 }
             }
 
             if let address = detail.address {
                 Text(address)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .roadBeansStyle(.bodyS)
+                    .foregroundStyle(.ink(.secondary))
             }
 
             if let coordinate = detail.coordinate {
@@ -143,25 +148,27 @@ struct PlaceDetailView: View {
                 }
                 .buttonStyle(.bordered)
             }
+            }
         }
-        .glassCard(tint: detail.kind.accentColor)
     }
 
     @ViewBuilder
     private func averageBlock(_ detail: PlaceDetail) -> some View {
         if let averageRating = detail.averageRating {
-            VStack(alignment: .leading, spacing: 8) {
+            RoadBeansCard {
+                VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
                 Text("Average rating")
-                    .font(.roadBeansBody)
-                    .foregroundStyle(.secondary)
-                BeanRating(value: averageRating, pixelSize: 4)
+                    .roadBeansStyle(.bodyM)
+                    .foregroundStyle(.ink(.secondary))
+                BeanRatingView(value: .constant(averageRating), size: 24, editable: false)
+                }
             }
-            .glassCard()
         } else {
-            Text("No ratings yet")
-                .font(.roadBeansBody)
-                .foregroundStyle(.secondary)
-                .glassCard()
+            RoadBeansCard {
+                Text("No ratings yet")
+                    .roadBeansStyle(.bodyM)
+                    .foregroundStyle(.ink(.secondary))
+            }
         }
     }
 
@@ -196,19 +203,20 @@ struct PlaceDetailView: View {
     }
 
     private func visitCard(_ visit: VisitRow) -> some View {
-        VStack(alignment: .leading, spacing: RoadBeansTheme.Spacing.sm) {
+        RoadBeansCard {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
             Button {
                 toggleVisitExpansion(visit.id)
             } label: {
                 HStack {
                     Text(visit.date.formatted(date: .abbreviated, time: .shortened))
-                        .font(.roadBeansBody)
-                        .foregroundStyle(.primary)
+                        .roadBeansStyle(.bodyM)
+                        .foregroundStyle(.ink(.primary))
 
                     Spacer()
 
                     if let averageRating = visit.averageRating {
-                        BeanRating(value: averageRating, pixelSize: 2)
+                        BeanRatingView(value: .constant(averageRating), size: 16, editable: false)
                     }
 
                     Image(systemName: expandedVisits.contains(visit.id) ? "chevron.up" : "chevron.down")
@@ -232,11 +240,11 @@ struct PlaceDetailView: View {
                         Label("View visit", systemImage: "arrow.right")
                     }
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .roadBeansStyle(.bodyS)
+                .foregroundStyle(.ink(.secondary))
+            }
             }
         }
-        .glassCard()
         .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
         .listRowBackground(Color.clear)
     }
