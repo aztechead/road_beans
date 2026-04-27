@@ -12,6 +12,8 @@ struct Road_BeansApp: App {
     private let tagRepository: any TagRepository
     private let photoRepository: any PhotoRepository
     private let tombstoneRepository: any TombstoneRepository
+    private let favoriteMemberRepository: any FavoriteMemberRepository
+    private let communityService: any CommunityService
     private let locationSearchService: any LocationSearchService
     private let locationPermissionService: any LocationPermissionService
     private let currentLocationProvider: any CurrentLocationProvider
@@ -28,7 +30,9 @@ struct Road_BeansApp: App {
         let places = LocalPlaceRepository(context: context, sync: sync, tombstones: tombstones)
         let tags = LocalTagRepository(context: context, sync: sync)
         tags.seedDefaultsIfNeeded()
+        let favoriteMembers = LocalFavoriteMemberRepository(context: context)
         let photos = LocalPhotoRepository(context: context, sync: sync)
+        let community: any CommunityService = CloudKitCommunityService()
         let visits = LocalVisitRepository(
             context: context,
             sync: sync,
@@ -38,6 +42,10 @@ struct Road_BeansApp: App {
             tombstones: tombstones,
             photoProcessor: photoProcessing
         )
+        let publishCoordinator = CommunityPublishCoordinator(community: community) { id in
+            try await visits.communityDraft(for: id)
+        }
+        visits.attachCommunity(publishCoordinator)
 
         self.icloud = icloud
         self.sync = sync
@@ -46,6 +54,8 @@ struct Road_BeansApp: App {
         self.tagRepository = tags
         self.photoRepository = photos
         self.tombstoneRepository = tombstones
+        self.favoriteMemberRepository = favoriteMembers
+        self.communityService = community
         self.locationSearchService = SystemLocationSearchService()
         self.locationPermissionService = SystemLocationPermissionService()
         self.currentLocationProvider = SystemCurrentLocationProvider()
@@ -63,6 +73,8 @@ struct Road_BeansApp: App {
                 .environment(\.tagRepository, tagRepository)
                 .environment(\.photoRepository, photoRepository)
                 .environment(\.tombstoneRepository, tombstoneRepository)
+                .environment(\.favoriteMemberRepository, favoriteMemberRepository)
+                .environment(\.communityService, communityService)
                 .environment(\.locationSearchService, locationSearchService)
                 .environment(\.locationPermissionService, locationPermissionService)
                 .environment(\.currentLocationProvider, currentLocationProvider)

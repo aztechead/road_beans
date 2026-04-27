@@ -8,5 +8,6 @@ enum AppSchema {
         Tag.self,
         VisitPhoto.self,
         Tombstone.self,
+        FavoriteMember.self,
     ])
 }

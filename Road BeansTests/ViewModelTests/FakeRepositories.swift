@@ -71,6 +71,22 @@ final class FakeVisitRepository: VisitRepository, @unchecked Sendable {
         if let detailError { throw detailError }
         return details[id]
     }
+
+    func communityDraft(for visitID: UUID) async throws -> CommunityVisitDraft? {
+        guard let detail = try await detail(id: visitID) else { return nil }
+        return CommunityVisitDraft(
+            localVisitID: detail.id,
+            placeName: detail.placeName,
+            placeKindRawValue: detail.placeKind.rawValue,
+            placeMapKitIdentifier: nil,
+            placeLatitude: nil,
+            placeLongitude: nil,
+            visitDate: detail.date,
+            beanRating: detail.drinks.isEmpty ? 0 : detail.drinks.reduce(0) { $0 + $1.rating } / Double(detail.drinks.count),
+            drinkSummary: detail.drinks.map { "\($0.name) (\($0.category.displayName))" }.joined(separator: ", "),
+            tagSummary: detail.tagNames.joined(separator: ", ")
+        )
+    }
 }
 
 final class FakeTagRepository: TagRepository, @unchecked Sendable {

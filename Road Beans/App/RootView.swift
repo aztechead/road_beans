@@ -34,6 +34,10 @@ struct RootView: View {
                 MapTabView()
                     .tabItem { Label("Map", systemImage: "map.fill") }
                     .tag(AppTab.map)
+
+                CommunityTabView()
+                    .tabItem { Label("Community", systemImage: "person.3.fill") }
+                    .tag(AppTab.community)
             }
             .fullScreenCover(isPresented: $isShowingAddVisit) {
                 AddVisitView()
@@ -62,4 +66,5 @@ struct RootView: View {
 private enum AppTab: Hashable {
     case list
     case map
+    case community
 }

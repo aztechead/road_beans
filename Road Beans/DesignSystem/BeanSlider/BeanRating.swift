@@ -6,7 +6,7 @@ struct BeanRating: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            BeanGlyph(beanCount: BeanGlyph.beanCount(for: value), pixelSize: pixelSize)
+            BeanPixelArt(value: value, basePixelSize: pixelSize)
 
             Text(String(format: "%.1f", value))
                 .font(.roadBeansNumeric)

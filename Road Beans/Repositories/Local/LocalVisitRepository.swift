@@ -10,6 +10,7 @@ final class LocalVisitRepository: VisitRepository {
     private let photos: any PhotoRepository
     private let tombstones: any TombstoneRepository
     private let photoProcessor: any PhotoProcessingService
+    private var community: CommunityPublishCoordinator?
 
     init(
         context: ModelContext,
@@ -55,6 +56,7 @@ final class LocalVisitRepository: VisitRepository {
 
         await sync.markDirty(.visit, id: visit.id)
         await sync.markDirty(.place, id: place.id)
+        await community?.publishIfMember(visitID: visit.id)
         return visit.id
     }
 
@@ -95,6 +97,7 @@ final class LocalVisitRepository: VisitRepository {
         }
 
         await sync.markDirty(.visit, id: visit.id)
+        await community?.republishIfMember(visitID: visit.id)
     }
 
     func delete(_ command: DeleteVisitCommand) async throws {
@@ -102,9 +105,30 @@ final class LocalVisitRepository: VisitRepository {
         let id = visit.id
         let remoteID = visit.remoteID
 
+        await community?.unpublishIfPossible(visitID: id)
         context.delete(visit)
         try context.save()
         try await tombstones.insertTombstone(entityKind: .visit, entityID: id, remoteID: remoteID)
+    }
+
+    func attachCommunity(_ coordinator: CommunityPublishCoordinator) {
+        community = coordinator
+    }
+
+    func communityDraft(for visitID: UUID) async throws -> CommunityVisitDraft? {
+        guard let visit = try fetchVisitIfExists(id: visitID), let place = visit.place else { return nil }
+        return CommunityVisitDraft(
+            localVisitID: visit.id,
+            placeName: place.name,
+            placeKindRawValue: place.kind.rawValue,
+            placeMapKitIdentifier: place.mapKitIdentifier,
+            placeLatitude: place.latitude,
+            placeLongitude: place.longitude,
+            visitDate: visit.date,
+            beanRating: Self.averageRating(for: visit.drinks) ?? 0,
+            drinkSummary: visit.drinks.map { "\($0.name) (\($0.category.displayName))" }.joined(separator: ", "),
+            tagSummary: visit.tags.map(\.name).joined(separator: ", ")
+        )
     }
 
     func recentRows(limit: Int) async throws -> [RecentVisitRow] {

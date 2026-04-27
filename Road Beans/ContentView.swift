@@ -24,6 +24,8 @@ struct ContentView: View {
     let tombstones = LocalTombstoneRepository(context: context, sync: sync)
     let places = LocalPlaceRepository(context: context, sync: sync, tombstones: tombstones)
     let tags = LocalTagRepository(context: context, sync: sync)
+    let favoriteMembers = LocalFavoriteMemberRepository(context: context)
+    let community = InMemoryCommunityService(currentUserRecordID: "preview-user")
     let photos = LocalPhotoRepository(context: context, sync: sync)
     let visits = LocalVisitRepository(
         context: context,
@@ -43,6 +45,8 @@ struct ContentView: View {
         .environment(\.tagRepository, tags)
         .environment(\.photoRepository, photos)
         .environment(\.tombstoneRepository, tombstones)
+        .environment(\.favoriteMemberRepository, favoriteMembers)
+        .environment(\.communityService, community)
         .environment(\.locationSearchService, FakeLocationSearchService(canned: []))
         .environment(\.locationPermissionService, FakeLocationPermissionService(initial: .denied))
         .environment(\.currentLocationProvider, FakeCurrentLocationProvider(coordinate: nil))

@@ -109,6 +109,9 @@ final class LocalPlaceRepository: PlaceRepository {
             country: place.country,
             phoneNumber: place.phoneNumber,
             websiteURL: place.websiteURL,
+            mapKitIdentifier: place.mapKitIdentifier,
+            latitude: place.latitude,
+            longitude: place.longitude,
             coordinate: place.coordinate,
             averageRating: Self.averageRating(for: drinks),
             visits: visits

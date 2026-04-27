@@ -29,4 +29,5 @@ protocol VisitRepository: Sendable {
     func delete(_ command: DeleteVisitCommand) async throws
     func recentRows(limit: Int) async throws -> [RecentVisitRow]
     func detail(id: UUID) async throws -> VisitDetail?
+    func communityDraft(for visitID: UUID) async throws -> CommunityVisitDraft?
 }
