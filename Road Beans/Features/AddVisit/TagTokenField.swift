@@ -32,6 +32,9 @@ struct TagTokenField: View {
                 suggestionChips
             }
         }
+        .task {
+            await refreshSuggestions(for: input)
+        }
     }
 
     private var tagChips: some View {
@@ -43,6 +46,7 @@ struct TagTokenField: View {
 
                         Button {
                             tags.removeAll { $0 == tag }
+                            Task { await refreshSuggestions(for: input) }
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .imageScale(.small)
@@ -66,7 +70,7 @@ struct TagTokenField: View {
                     Button(suggestion.name) {
                         TagTokenLogic.add(suggestion.name, to: &tags)
                         input = ""
-                        currentSuggestions = []
+                        Task { await refreshSuggestions(for: "") }
                     }
                     .buttonStyle(.bordered)
                 }
@@ -77,7 +81,7 @@ struct TagTokenField: View {
     private func addInput() {
         TagTokenLogic.add(input, to: &tags)
         input = ""
-        currentSuggestions = []
+        Task { await refreshSuggestions(for: "") }
     }
 
     private func handleInputChange(_ value: String) {
@@ -86,12 +90,18 @@ struct TagTokenField: View {
                 TagTokenLogic.add(String(part), to: &tags)
             }
             input = ""
-            currentSuggestions = []
+            Task { await refreshSuggestions(for: "") }
             return
         }
 
         Task {
-            currentSuggestions = await suggestions(value)
+            await refreshSuggestions(for: value)
         }
+    }
+
+    private func refreshSuggestions(for value: String) async {
+        let normalizedTags = Set(tags.map(LocalTagRepository.normalize(_:)))
+        currentSuggestions = await suggestions(value)
+            .filter { !normalizedTags.contains(LocalTagRepository.normalize($0.name)) }
     }
 }

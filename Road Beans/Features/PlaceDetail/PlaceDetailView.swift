@@ -30,6 +30,7 @@ struct PlaceDetailView: View {
             }
         }
         .navigationTitle("Place")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if viewModel?.detail != nil {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -100,6 +101,7 @@ struct PlaceDetailView: View {
                 visitsList(detail)
             }
             .padding(RoadBeansTheme.Spacing.md)
+            .padding(.bottom, 88)
         }
         .roadBeansScreenBackground()
     }

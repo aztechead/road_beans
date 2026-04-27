@@ -9,6 +9,7 @@ final class PersistenceController {
     let container: ModelContainer
 
     private let defaults: UserDefaults
+    private var cloudKitIdentityToken: AnyHashable?
     private static let migrationDeferredKey = "RoadBeans.migrationDeferred"
 
     init(
@@ -23,7 +24,9 @@ final class PersistenceController {
 
         let deferredFlag = migrationDeferred ?? defaults.bool(forKey: Self.migrationDeferredKey)
         let hasLocalStore = localStoreExists ?? Self.localStoreExistsOnDisk()
-        let hasICloudToken = icloud.currentToken() != nil
+        let initialICloudToken = icloud.currentToken()
+        let hasICloudToken = initialICloudToken != nil
+        cloudKitIdentityToken = initialICloudToken
 
         let resolvedMode: PersistenceMode
         if forceLocalOnly {
@@ -47,8 +50,12 @@ final class PersistenceController {
 
         Task { [weak self] in
             for await _ in icloud.identityChanges {
+                let latestToken = icloud.currentToken()
                 await MainActor.run {
-                    self?.mode = .pendingRelaunch
+                    guard let self, self.mode == .cloudKitBacked else { return }
+                    guard latestToken != self.cloudKitIdentityToken else { return }
+                    self.cloudKitIdentityToken = latestToken
+                    self.mode = .pendingRelaunch
                 }
             }
         }

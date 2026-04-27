@@ -31,6 +31,7 @@ struct VisitDetailView: View {
             }
         }
         .navigationTitle("Visit")
+        .navigationBarTitleDisplayMode(.inline)
         .task { await ensureLoaded() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -107,6 +108,7 @@ struct VisitDetailView: View {
                 drinks(detail.drinks)
             }
             .padding(RoadBeansTheme.Spacing.md)
+            .padding(.bottom, 88)
         }
         .roadBeansScreenBackground()
     }
