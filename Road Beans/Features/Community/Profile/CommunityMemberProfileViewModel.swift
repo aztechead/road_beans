@@ -55,7 +55,7 @@ final class CommunityMemberProfileViewModel {
 
     func leave() async -> Bool {
         do {
-            try await service.leave()
+            try await service.leave(deleteRatings: true)
             member = nil
             state = .empty
             return true

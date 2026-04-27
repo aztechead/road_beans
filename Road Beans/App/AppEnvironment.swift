@@ -56,6 +56,10 @@ private struct CommunityServiceKey: EnvironmentKey {
     static let defaultValue: any CommunityService = MissingCommunityService()
 }
 
+private struct CommunityMemberCacheKey: EnvironmentKey {
+    static let defaultValue = CommunityMemberCache()
+}
+
 private struct FavoriteMemberRepositoryKey: EnvironmentKey {
     static let defaultValue: any FavoriteMemberRepository = MissingFavoriteMemberRepository()
 }
@@ -119,6 +123,11 @@ extension EnvironmentValues {
     var communityService: any CommunityService {
         get { self[CommunityServiceKey.self] }
         set { self[CommunityServiceKey.self] = newValue }
+    }
+
+    var communityMemberCache: CommunityMemberCache {
+        get { self[CommunityMemberCacheKey.self] }
+        set { self[CommunityMemberCacheKey.self] = newValue }
     }
 
     var favoriteMemberRepository: any FavoriteMemberRepository {

@@ -85,7 +85,7 @@ private struct ThrowingFeedCommunityService: CommunityService {
     }
 
     func join(displayName: String, profile: TasteProfile, existingVisits: [CommunityVisitDraft]) async throws {}
-    func leave() async throws {}
+    func leave(deleteRatings: Bool) async throws {}
     func updateProfile(displayName: String, profile: TasteProfile) async throws {}
     func publish(_ visit: CommunityVisitDraft) async throws -> String { visit.localVisitID.uuidString }
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws {}

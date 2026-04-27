@@ -45,8 +45,11 @@ struct EditVisitView: View {
                     }
 
                     RoadBeansSection("Visit Tags") {
-                        TextField("roadtrip, smooth, favorite", text: $visitTags)
-                            .textInputAutocapitalization(.never)
+                        RoadBeansClearableTextField(
+                            "roadtrip, smooth, favorite",
+                            text: $visitTags,
+                            autocapitalization: .never
+                        )
                             .padding(RoadBeansSpacing.md)
                             .surface(.sunken, radius: RoadBeansRadius.md)
                     }
@@ -142,20 +145,20 @@ struct EditVisitView: View {
                 }
             }
 
-            TextField("Drink name", text: $drinks[index].name)
+            RoadBeansClearableTextField("Drink name", text: $drinks[index].name)
                 .padding(RoadBeansSpacing.md)
                 .surface(.sunken, radius: RoadBeansRadius.md)
 
             EditVisitDrinkCategoryChips(selection: $drinks[index].category)
 
-            TextField(
+            RoadBeansClearableTextField(
                 "Tags",
                 text: Binding(
                     get: { drinks[index].tags.joined(separator: ", ") },
                     set: { drinks[index].tags = parseTags($0) }
-                )
+                ),
+                autocapitalization: .never
             )
-            .textInputAutocapitalization(.never)
             .padding(RoadBeansSpacing.md)
             .surface(.sunken, radius: RoadBeansRadius.md)
 

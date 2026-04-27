@@ -14,6 +14,7 @@ struct Road_BeansApp: App {
     private let tombstoneRepository: any TombstoneRepository
     private let favoriteMemberRepository: any FavoriteMemberRepository
     private let communityService: any CommunityService
+    private let communityMemberCache: CommunityMemberCache
     private let locationSearchService: any LocationSearchService
     private let locationPermissionService: any LocationPermissionService
     private let currentLocationProvider: any CurrentLocationProvider
@@ -33,6 +34,7 @@ struct Road_BeansApp: App {
         let favoriteMembers = LocalFavoriteMemberRepository(context: context)
         let photos = LocalPhotoRepository(context: context, sync: sync)
         let community: any CommunityService = CloudKitCommunityService()
+        let communityMemberCache = CommunityMemberCache()
         let visits = LocalVisitRepository(
             context: context,
             sync: sync,
@@ -56,6 +58,7 @@ struct Road_BeansApp: App {
         self.tombstoneRepository = tombstones
         self.favoriteMemberRepository = favoriteMembers
         self.communityService = community
+        self.communityMemberCache = communityMemberCache
         self.locationSearchService = SystemLocationSearchService()
         self.locationPermissionService = SystemLocationPermissionService()
         self.currentLocationProvider = SystemCurrentLocationProvider()
@@ -67,6 +70,10 @@ struct Road_BeansApp: App {
             await CloudKitCommunitySchemaBootstrapper().bootstrapDevelopmentSchema()
         }
         #endif
+
+        Task {
+            await communityMemberCache.preload(using: community)
+        }
     }
 
     var body: some Scene {
@@ -81,6 +88,7 @@ struct Road_BeansApp: App {
                 .environment(\.tombstoneRepository, tombstoneRepository)
                 .environment(\.favoriteMemberRepository, favoriteMemberRepository)
                 .environment(\.communityService, communityService)
+                .environment(\.communityMemberCache, communityMemberCache)
                 .environment(\.locationSearchService, locationSearchService)
                 .environment(\.locationPermissionService, locationPermissionService)
                 .environment(\.currentLocationProvider, currentLocationProvider)

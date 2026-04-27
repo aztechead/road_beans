@@ -57,7 +57,7 @@ private struct DrinkDraftRow: View {
 
             DrinkCategoryChips(selection: $drink.category)
 
-            TextField("Drink name", text: $drink.name)
+            RoadBeansClearableTextField("Drink name", text: $drink.name)
                 .padding(RoadBeansSpacing.md)
                 .surface(.sunken, radius: RoadBeansRadius.md)
 
