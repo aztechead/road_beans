@@ -82,6 +82,16 @@ actor InMemoryCommunityService: CommunityService {
         likes = likes.filter { !$0.hasPrefix("\(recordName)-") }
     }
 
+    func deleteVisit(recordName: String) async throws {
+        guard members[currentUserRecordID] != nil else { throw CommunityServiceError.notAMember }
+        guard let row = visits[recordName] else { throw CommunityServiceError.notFound }
+        guard row.authorUserRecordID == currentUserRecordID else { throw CommunityServiceError.notAuthor }
+        visits[recordName] = nil
+        commentRows[recordName] = nil
+        localVisitIndex = localVisitIndex.filter { $0.value != recordName }
+        likes = likes.filter { !$0.hasPrefix("\(recordName)-") }
+    }
+
     func fetchFeedPage(
         cursor: String?,
         limit: Int,

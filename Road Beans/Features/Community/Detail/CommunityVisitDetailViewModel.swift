@@ -9,10 +9,13 @@ final class CommunityVisitDetailViewModel {
     var state: ScreenState = .idle
     var isPostingComment = false
     var isUpdatingLike = false
+    var isDeletingVisit = false
     var actionMessage: String?
+    var deleteSucceeded = false
 
     private let recordName: String
     private let service: any CommunityService
+    private var currentMember: CommunityMemberSnapshot?
 
     init(recordName: String, service: any CommunityService) {
         self.recordName = recordName
@@ -22,11 +25,19 @@ final class CommunityVisitDetailViewModel {
     func load() async {
         state = .loading
         do {
-            detail = try await service.fetchVisitDetail(recordName: recordName)
+            async let loadedMember = service.currentMember()
+            async let loadedDetail = service.fetchVisitDetail(recordName: recordName)
+            currentMember = try await loadedMember
+            detail = try await loadedDetail
             state = detail == nil ? .empty : .loaded
         } catch {
             state = .failed("Road Beans could not load this community visit.")
         }
+    }
+
+    var canDeleteVisit: Bool {
+        guard let currentMember, let detail else { return false }
+        return detail.row.authorUserRecordID == currentMember.userRecordID
     }
 
     func toggleLike() async {
@@ -85,5 +96,20 @@ final class CommunityVisitDetailViewModel {
         } catch {
             actionMessage = "Road Beans could not delete the comment."
         }
+    }
+
+    func deleteVisit() async {
+        guard canDeleteVisit, !isDeletingVisit else { return }
+        isDeletingVisit = true
+        actionMessage = nil
+        do {
+            try await service.deleteVisit(recordName: recordName)
+            deleteSucceeded = true
+        } catch CommunityServiceError.notAuthor {
+            actionMessage = "Only the author can delete this community review."
+        } catch {
+            actionMessage = "Road Beans could not delete this community review."
+        }
+        isDeletingVisit = false
     }
 }

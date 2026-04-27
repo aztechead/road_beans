@@ -23,6 +23,7 @@ protocol CommunityService: Sendable {
     func publish(_ visit: CommunityVisitDraft) async throws -> String
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws
     func deletePublishedVisit(localVisitID: UUID) async throws
+    func deleteVisit(recordName: String) async throws
 
     func fetchFeedPage(
         cursor: String?,

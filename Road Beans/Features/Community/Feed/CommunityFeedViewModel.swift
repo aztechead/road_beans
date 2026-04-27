@@ -248,6 +248,16 @@ final class CommunityFeedViewModel {
         }
     }
 
+    func deleteVisit(_ row: CommunityVisitRow) async {
+        guard filter == .mine else { return }
+        do {
+            try await service.deleteVisit(recordName: row.id)
+            removeRow(recordName: row.id)
+        } catch {
+            logger.error("Community feed delete failed for \(row.id, privacy: .public): \(String(describing: error), privacy: .public)")
+        }
+    }
+
     private func loadPage(
         cursor: String?,
         limit: Int,
@@ -332,6 +342,13 @@ final class CommunityFeedViewModel {
             guard let index = rows.firstIndex(where: { $0.id == recordName }) else { return }
             rows[index].likeCount = max(0, rows[index].likeCount + delta)
         }
+    }
+
+    private func removeRow(recordName: String) {
+        updateRows { rows in
+            rows.removeAll { $0.id == recordName }
+        }
+        likedVisitIDs.remove(recordName)
     }
 
     private func updateRows(_ update: (inout [CommunityVisitRow]) -> Void) {

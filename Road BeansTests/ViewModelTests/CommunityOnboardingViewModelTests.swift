@@ -27,6 +27,7 @@ private struct FailingJoinCommunityService: CommunityService {
     func publish(_ visit: CommunityVisitDraft) async throws -> String { visit.localVisitID.uuidString }
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws {}
     func deletePublishedVisit(localVisitID: UUID) async throws {}
+    func deleteVisit(recordName: String) async throws {}
 
     func fetchFeedPage(
         cursor: String?,
