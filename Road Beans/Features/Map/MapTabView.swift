@@ -20,6 +20,7 @@ struct MapTabView: View {
     @Environment(\.currentLocationProvider) private var currentLocationProvider
     @Environment(\.communityService) private var communityService
     @Environment(\.communityMemberCache) private var communityMemberCache
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: MapTabViewModel?
     @State private var selectedMapItem: MapSheetItem?
     @State private var mapPosition: MapCameraPosition = .automatic
@@ -71,6 +72,17 @@ struct MapTabView: View {
                 await viewModel?.reload(allowingNearMe: viewModel?.nearMeOn ?? false)
             }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task {
+                guard let viewModel, viewModel.communityReviewsOn else { return }
+                await viewModel.reloadCommunityAnnotations(enabled: true)
+                guard viewModel.communityReviewsOn else { return }
+                await MainActor.run {
+                    fitCommunityContent(viewModel)
+                }
+            }
+        }
     }
 
     private func content(_ viewModel: MapTabViewModel) -> some View {
@@ -100,7 +112,13 @@ struct MapTabView: View {
                     Toggle("Community reviews", isOn: $viewModel.communityReviewsOn)
                         .padding()
                         .onChange(of: viewModel.communityReviewsOn) { _, isOn in
-                            Task { await viewModel.reloadCommunityAnnotations(enabled: isOn) }
+                            Task {
+                                await viewModel.reloadCommunityAnnotations(enabled: isOn)
+                                guard isOn, viewModel.communityReviewsOn else { return }
+                                await MainActor.run {
+                                    fitCommunityContent(viewModel)
+                                }
+                            }
                         }
                 }
             }
@@ -111,7 +129,7 @@ struct MapTabView: View {
                 deniedRationale
             } else if viewModel.currentLocationUnavailable {
                 currentLocationUnavailableState(viewModel)
-            } else if viewModel.state == .empty {
+            } else if viewModel.state == .empty && !viewModel.hasVisibleMapContent {
                 ContentUnavailableView(
                     "No stops on the map yet",
                     systemImage: "map",
@@ -337,6 +355,48 @@ struct MapTabView: View {
             .padding()
             .presentationDetents([.medium])
         }
+    }
+
+    @MainActor
+    private func fitCommunityContent(_ viewModel: MapTabViewModel) {
+        var coordinates: [CLLocationCoordinate2D] = []
+        coordinates.append(contentsOf: viewModel.places.compactMap(\.coordinate))
+        coordinates.append(contentsOf: viewModel.communityAnnotations.map(\.coordinate))
+        if let currentLocation = viewModel.currentLocation {
+            coordinates.append(currentLocation.coordinate)
+        }
+
+        guard let first = coordinates.first else { return }
+        guard coordinates.count > 1 else {
+            mapPosition = .region(
+                MKCoordinateRegion(
+                    center: first,
+                    latitudinalMeters: 25_000,
+                    longitudinalMeters: 25_000
+                )
+            )
+            return
+        }
+
+        let minLatitude = coordinates.map(\.latitude).min() ?? first.latitude
+        let maxLatitude = coordinates.map(\.latitude).max() ?? first.latitude
+        let minLongitude = coordinates.map(\.longitude).min() ?? first.longitude
+        let maxLongitude = coordinates.map(\.longitude).max() ?? first.longitude
+        let center = CLLocationCoordinate2D(
+            latitude: (minLatitude + maxLatitude) / 2,
+            longitude: (minLongitude + maxLongitude) / 2
+        )
+        let latitudeDelta = max((maxLatitude - minLatitude) * 1.5, 0.02)
+        let longitudeDelta = max((maxLongitude - minLongitude) * 1.5, 0.02)
+        mapPosition = .region(
+            MKCoordinateRegion(
+                center: center,
+                span: MKCoordinateSpan(
+                    latitudeDelta: latitudeDelta,
+                    longitudeDelta: longitudeDelta
+                )
+            )
+        )
     }
 }
 
