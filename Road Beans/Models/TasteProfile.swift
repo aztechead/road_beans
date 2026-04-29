@@ -41,6 +41,44 @@ enum TasteAxis: String, CaseIterable, Codable, Sendable {
         case .body: "Heavy"
         }
     }
+
+    nonisolated var compactMidLabel: String {
+        compactLabel(for: 0.5)
+    }
+
+    nonisolated func compactLabel(for value: Double) -> String {
+        let band = switch min(max(value, 0), 1) {
+        case ..<0.2: 0
+        case ..<0.4: 1
+        case ..<0.6: 2
+        case ..<0.8: 3
+        default: 4
+        }
+
+        return switch (self, band) {
+        case (.roast, 0): "Light Roast"
+        case (.roast, 1): "Toast Curious"
+        case (.roast, 2): "Medium Roast"
+        case (.roast, 3): "Campfire Roast"
+        case (.roast, 4): "Midnight Roast"
+        case (.flavor, 0): "Citrus Bright"
+        case (.flavor, 1): "Bright Lean"
+        case (.flavor, 2): "Smooth Middle"
+        case (.flavor, 3): "Mellow Cocoa"
+        case (.flavor, 4): "Dessert Mellow"
+        case (.notes, 0): "Fruit Forward"
+        case (.notes, 1): "Berry Tilt"
+        case (.notes, 2): "Mixed Notes"
+        case (.notes, 3): "Nutty Lean"
+        case (.notes, 4): "Trail Mix Nutty"
+        case (.body, 0): "Light Body"
+        case (.body, 1): "Silky Body"
+        case (.body, 2): "Medium Body"
+        case (.body, 3): "Plush Body"
+        case (.body, 4): "Heavy Body"
+        default: "Medium"
+        }
+    }
 }
 
 struct TasteProfile: Codable, Sendable, Equatable {

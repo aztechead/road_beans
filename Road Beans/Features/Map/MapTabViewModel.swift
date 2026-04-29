@@ -80,7 +80,9 @@ final class MapTabViewModel {
     }
 
     func reload(allowingNearMe: Bool) async {
-        state = .loading
+        if places.isEmpty && currentLocation == nil {
+            state = .loading
+        }
         do {
             if allowingNearMe, permissionStatus == .authorized {
                 isLoadingCurrentLocation = true

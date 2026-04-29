@@ -93,7 +93,6 @@ final class LocalPlaceRepository: PlaceRepository {
         let visits = place.visits
             .sorted { $0.date > $1.date }
             .map(Self.toVisitRow(_:))
-        let drinks = place.visits.flatMap(\.drinks)
 
         return PlaceDetail(
             id: place.id,
@@ -113,7 +112,7 @@ final class LocalPlaceRepository: PlaceRepository {
             latitude: place.latitude,
             longitude: place.longitude,
             coordinate: place.coordinate,
-            averageRating: Self.averageRating(for: drinks),
+            averageRating: Self.averageRating(forVisits: place.visits),
             visits: visits
         )
     }
@@ -172,14 +171,13 @@ final class LocalPlaceRepository: PlaceRepository {
     }
 
     private static func toSummary(_ place: Place) -> PlaceSummary {
-        let drinks = place.visits.flatMap(\.drinks)
         return PlaceSummary(
             id: place.id,
             name: place.name,
             kind: place.kind,
             address: place.address,
             coordinate: place.coordinate,
-            averageRating: averageRating(for: drinks),
+            averageRating: averageRating(forVisits: place.visits),
             visitCount: place.visits.count
         )
     }
@@ -196,8 +194,25 @@ final class LocalPlaceRepository: PlaceRepository {
     }
 
     private static func averageRating(for drinks: [Drink]) -> Double? {
-        guard !drinks.isEmpty else { return nil }
-        return drinks.map(\.rating).reduce(0, +) / Double(drinks.count)
+        var total = 0.0
+        var count = 0
+        for drink in drinks {
+            total += drink.rating
+            count += 1
+        }
+        return count == 0 ? nil : total / Double(count)
+    }
+
+    private static func averageRating(forVisits visits: [Visit]) -> Double? {
+        var total = 0.0
+        var count = 0
+        for visit in visits {
+            for drink in visit.drinks {
+                total += drink.rating
+                count += 1
+            }
+        }
+        return count == 0 ? nil : total / Double(count)
     }
 
     static func distanceMeters(_ lat1: Double, _ lng1: Double, _ lat2: Double, _ lng2: Double) -> Double {

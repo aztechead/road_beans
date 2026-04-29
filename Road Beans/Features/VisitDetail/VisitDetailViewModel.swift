@@ -16,7 +16,9 @@ final class VisitDetailViewModel {
     }
 
     func load() async {
-        state = .loading
+        if detail == nil {
+            state = .loading
+        }
         do {
             detail = try await visits.detail(id: visitID)
             state = detail == nil ? .empty : .loaded
@@ -32,6 +34,9 @@ final class VisitDetailViewModel {
 
     func update(_ command: UpdateVisitCommand) async throws {
         try await visits.update(command)
-        await load()
+        if let refreshed = try? await visits.detail(id: visitID) {
+            detail = refreshed
+        }
+        state = .loaded
     }
 }

@@ -180,6 +180,10 @@ actor InMemoryCommunityService: CommunityService {
         likes.contains(likeKey(recordName))
     }
 
+    func likedVisitIDsByCurrentUser(in recordNames: Set<String>) async throws -> Set<String> {
+        Set(recordNames.filter { likes.contains(likeKey($0)) })
+    }
+
     func comments(forVisitRecordName recordName: String) async throws -> [CommunityCommentRow] {
         commentRows[recordName, default: []].sorted { $0.timestamp < $1.timestamp }
     }

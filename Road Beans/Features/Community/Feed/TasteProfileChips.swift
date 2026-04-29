@@ -27,6 +27,6 @@ struct TasteProfileChips: View {
     }
 
     private func label(for axis: TasteAxis, profile: TasteProfile) -> String {
-        profile.value(for: axis) >= 0.5 ? axis.compactHighLabel : axis.compactLowLabel
+        axis.compactLabel(for: profile.value(for: axis))
     }
 }

@@ -314,20 +314,14 @@ final class CommunityFeedViewModel {
 
     private func hydrateLikedStateForVisibleRows() async {
         let rows = favoritesRows + everyoneRows
-        await withTaskGroup(of: (String, Bool)?.self) { group in
-            for row in rows {
-                group.addTask { [service] in
-                    do {
-                        return (row.id, try await service.isLikedByCurrentUser(row.id))
-                    } catch {
-                        return nil
-                    }
-                }
+        let ids = Set(rows.map(\.id))
+        do {
+            let likedIDs = try await service.likedVisitIDsByCurrentUser(in: ids)
+            for id in ids {
+                setLiked(likedIDs.contains(id), for: id)
             }
-            for await result in group {
-                guard let (recordName, liked) = result else { continue }
-                setLiked(liked, for: recordName)
-            }
+        } catch {
+            logger.error("Community feed liked state hydrate failed: \(String(describing: error), privacy: .public)")
         }
     }
 

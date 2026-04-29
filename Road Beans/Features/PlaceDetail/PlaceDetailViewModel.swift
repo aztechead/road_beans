@@ -24,7 +24,9 @@ final class PlaceDetailViewModel {
     }
 
     func load(id: UUID) async {
-        state = .loading
+        if detail == nil {
+            state = .loading
+        }
         do {
             detail = try await placeRepository.detail(id: id)
             if let detail {

@@ -32,4 +32,15 @@ struct TasteProfileTests {
 
         #expect(decoded == profile)
     }
+
+    @Test func compactLabelsUseWittyBands() {
+        #expect(TasteAxis.roast.compactLabel(for: 0.0) == "Light Roast")
+        #expect(TasteAxis.roast.compactLabel(for: 0.3) == "Toast Curious")
+        #expect(TasteAxis.roast.compactLabel(for: 0.5) == "Medium Roast")
+        #expect(TasteAxis.roast.compactLabel(for: 0.7) == "Campfire Roast")
+        #expect(TasteAxis.roast.compactLabel(for: 1.0) == "Midnight Roast")
+        #expect(TasteAxis.flavor.compactLabel(for: 0.5) == "Smooth Middle")
+        #expect(TasteAxis.notes.compactLabel(for: 0.5) == "Mixed Notes")
+        #expect(TasteAxis.body.compactLabel(for: 0.5) == "Medium Body")
+    }
 }

@@ -7,6 +7,7 @@ struct EditVisitView: View {
     let save: (UpdateVisitCommand) async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.photoProcessingService) private var photoProcessor
     @State private var date: Date
     @State private var visitTags: String
     @State private var drinks: [DrinkDraft]
@@ -172,17 +173,7 @@ struct EditVisitView: View {
 
     private func existingPhotoRow(_ photo: PhotoReference) -> some View {
         HStack(spacing: 12) {
-            if let image = UIImage(data: photo.thumbnailData) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 56, height: 56)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            } else {
-                Image(systemName: "photo")
-                    .frame(width: 56, height: 56)
-                    .foregroundStyle(.secondary)
-            }
+            PhotoThumbnailData(data: photo.thumbnailData, size: 56, radius: 10)
 
             Text(photo.caption ?? "Photo")
                 .roadBeansStyle(.bodyM)
@@ -208,12 +199,10 @@ struct EditVisitView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(Array(newPhotos.enumerated()), id: \.offset) { index, draft in
-                    if let image = UIImage(data: draft.rawImageData) {
-                        PhotoThumbnail(image: image) {
-                            newPhotos.remove(at: index)
-                            if index < pickerItems.count {
-                                pickerItems.remove(at: index)
-                            }
+                    PhotoThumbnail(data: draft.previewImageData ?? draft.rawImageData) {
+                        newPhotos.remove(at: index)
+                        if index < pickerItems.count {
+                            pickerItems.remove(at: index)
                         }
                     }
                 }
@@ -254,7 +243,8 @@ struct EditVisitView: View {
         var drafts: [PhotoDraft] = []
         for item in items.prefix(8) {
             if let data = try? await item.loadTransferable(type: Data.self) {
-                drafts.append(PhotoDraft(rawImageData: data, caption: nil))
+                let previewData = try? await photoProcessor.process(data).thumbnailData
+                drafts.append(PhotoDraft(rawImageData: data, previewImageData: previewData, caption: nil))
             }
         }
         newPhotos = drafts
@@ -316,16 +306,25 @@ private struct PhotoEmptyDropZone: View {
 }
 
 private struct PhotoThumbnail: View {
-    let image: UIImage
+    let data: Data
     let onRemove: () -> Void
+    @State private var image: UIImage?
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 92, height: 92)
-                .clipShape(RoundedRectangle(cornerRadius: RoadBeansRadius.md, style: .continuous))
+            Group {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Image(systemName: "photo")
+                        .foregroundStyle(.ink(.secondary))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(width: 92, height: 92)
+            .clipShape(RoundedRectangle(cornerRadius: RoadBeansRadius.md, style: .continuous))
 
             Button(role: .destructive, action: onRemove) {
                 Image(systemName: "xmark")
@@ -336,6 +335,34 @@ private struct PhotoThumbnail: View {
             .buttonStyle(.plain)
             .foregroundStyle(Color.state(.danger))
             .padding(5)
+        }
+        .task(id: data) {
+            image = UIImage(data: data)
+        }
+    }
+}
+
+private struct PhotoThumbnailData: View {
+    let data: Data
+    let size: CGFloat
+    let radius: CGFloat
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "photo")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        .task(id: data) {
+            image = UIImage(data: data)
         }
     }
 }
