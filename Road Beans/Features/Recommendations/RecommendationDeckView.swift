@@ -46,7 +46,7 @@ struct RecommendationDeckView: View {
                     appleIntelligenceInfoButton
                 }
 
-                Text("Find nearby coffee and road stops that fit your taste.")
+                Text("Find coffee and stops your way.")
                     .roadBeansStyle(.titleL)
 
                 Text("Reads your saved visits on this device, your location, and Apple Maps place data. Apple Intelligence ranks the picks. Nothing leaves your iPhone.")
@@ -55,7 +55,7 @@ struct RecommendationDeckView: View {
 
                 optInDataGuide
 
-                RoadBeansButton(title: "Turn On Nearby Picks", systemImage: "location.magnifyingglass") {
+                RoadBeansButton(title: "Brew your Taste Profile", systemImage: "location.magnifyingglass") {
                     Task { await viewModel.enable() }
                 }
             }
@@ -71,23 +71,20 @@ struct RecommendationDeckView: View {
 
             optInTip(
                 icon: "star.fill",
-                title: "Rate honestly",
-                detail: "High ratings teach the model what to seek. Low ratings teach it what to skip — at that specific place, not everywhere."
+                title: "Rate a few stops",
+                detail: "Three honest ratings unlock picks. High ratings teach the model what to seek, and low ratings teach it what to skip."
             )
+
             optInTip(
                 icon: "tag.fill",
                 title: "Tag what stood out",
                 detail: "Tags like \"patio\", \"oat milk\", or \"fast Wi-Fi\" become the words the matcher looks for in nearby places."
             )
+
             optInTip(
                 icon: "cup.and.saucer.fill",
                 title: "Log the drink",
-                detail: "Naming what you ordered lets the model link drinks to ratings and weigh signals like \"espresso\" or \"cold brew\"."
-            )
-            optInTip(
-                icon: "calendar",
-                title: "A few visits go a long way",
-                detail: "Three rated visits unlock picks. More variety — different stops, different drinks — sharpens the matches."
+                detail: "Naming what you ordered helps the model connect drinks to ratings and weigh signals like \"espresso\" or \"cold brew\"."
             )
         }
         .padding(RoadBeansSpacing.md)
