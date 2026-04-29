@@ -64,6 +64,22 @@ private struct FavoriteMemberRepositoryKey: EnvironmentKey {
     static let defaultValue: any FavoriteMemberRepository = MissingFavoriteMemberRepository()
 }
 
+private struct RecommendationProfileServiceKey: EnvironmentKey {
+    static let defaultValue: any RecommendationProfileService = LocalRecommendationProfileService()
+}
+
+private struct NearbyRecommendationCandidateServiceKey: EnvironmentKey {
+    static let defaultValue: any NearbyRecommendationCandidateService = MissingNearbyRecommendationCandidateService()
+}
+
+private struct RecommendationEnrichmentServiceKey: EnvironmentKey {
+    static let defaultValue: any RecommendationEnrichmentService = PassthroughRecommendationEnrichmentService()
+}
+
+private struct RecommendationRankingServiceKey: EnvironmentKey {
+    static let defaultValue: any RecommendationRankingService = HeuristicRecommendationRankingService()
+}
+
 extension EnvironmentValues {
     var placeRepository: any PlaceRepository {
         get { self[PlaceRepositoryKey.self] }
@@ -133,6 +149,26 @@ extension EnvironmentValues {
     var favoriteMemberRepository: any FavoriteMemberRepository {
         get { self[FavoriteMemberRepositoryKey.self] }
         set { self[FavoriteMemberRepositoryKey.self] = newValue }
+    }
+
+    var recommendationProfileService: any RecommendationProfileService {
+        get { self[RecommendationProfileServiceKey.self] }
+        set { self[RecommendationProfileServiceKey.self] = newValue }
+    }
+
+    var nearbyRecommendationCandidateService: any NearbyRecommendationCandidateService {
+        get { self[NearbyRecommendationCandidateServiceKey.self] }
+        set { self[NearbyRecommendationCandidateServiceKey.self] = newValue }
+    }
+
+    var recommendationEnrichmentService: any RecommendationEnrichmentService {
+        get { self[RecommendationEnrichmentServiceKey.self] }
+        set { self[RecommendationEnrichmentServiceKey.self] = newValue }
+    }
+
+    var recommendationRankingService: any RecommendationRankingService {
+        get { self[RecommendationRankingServiceKey.self] }
+        set { self[RecommendationRankingServiceKey.self] = newValue }
     }
 }
 
@@ -219,6 +255,16 @@ private struct MissingTombstoneRepository: TombstoneRepository {
 
     func all() async throws -> [TombstoneDTO] {
         throw MissingEnvironmentDependencyError.missing("TombstoneRepository")
+    }
+}
+
+private struct MissingNearbyRecommendationCandidateService: NearbyRecommendationCandidateService {
+    func candidates(
+        near coordinate: CLLocationCoordinate2D,
+        radiusMeters: Double,
+        profile: RecommendationTasteProfile
+    ) async throws -> [RecommendationCandidate] {
+        throw MissingEnvironmentDependencyError.missing("NearbyRecommendationCandidateService")
     }
 }
 
