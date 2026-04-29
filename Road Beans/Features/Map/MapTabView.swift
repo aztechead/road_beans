@@ -75,7 +75,12 @@ struct MapTabView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             Task {
-                guard let viewModel, viewModel.communityReviewsOn else { return }
+                guard let viewModel else { return }
+                await viewModel.refreshPermissionStatus()
+                if viewModel.nearMeOn {
+                    await viewModel.reload(allowingNearMe: true)
+                }
+                guard viewModel.communityReviewsOn else { return }
                 await viewModel.reloadCommunityAnnotations(enabled: true)
                 guard viewModel.communityReviewsOn else { return }
                 await MainActor.run {
@@ -349,6 +354,10 @@ struct MapTabView: View {
                 }
                 .padding(RoadBeansSpacing.md)
                 .surface(.sunken, radius: RoadBeansRadius.md)
+
+                Text("\(annotation.reviewCount) community review\(annotation.reviewCount == 1 ? "" : "s")")
+                    .roadBeansStyle(.caption)
+                    .foregroundStyle(.ink(.secondary))
             }
             .padding(RoadBeansSpacing.lg)
             .roadBeansSurface(.base, tint: annotation.kind.accentColor)

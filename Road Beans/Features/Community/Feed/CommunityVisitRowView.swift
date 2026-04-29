@@ -6,7 +6,6 @@ struct CommunityVisitRowView: View {
     var isLiked = false
     var onRowTapped: (() -> Void)?
     var onLikeTapped: (() -> Void)?
-    var onCommentTapped: (() -> Void)?
 
     var body: some View {
         let placeKind = PlaceKind(rawValue: row.placeKindRawValue) ?? .other
@@ -71,15 +70,6 @@ struct CommunityVisitRowView: View {
                     isActive: isLiked,
                     action: onLikeTapped,
                     accessibilityLabel: isLiked ? "Unlike" : "Like"
-                )
-
-                actionLabel(
-                    count: row.commentCount,
-                    systemImage: "bubble.right",
-                    activeColor: .accent(.default),
-                    isActive: false,
-                    action: onCommentTapped,
-                    accessibilityLabel: "Comments"
                 )
 
                 Spacer()

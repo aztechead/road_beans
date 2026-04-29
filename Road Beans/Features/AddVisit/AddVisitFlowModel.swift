@@ -81,9 +81,4 @@ final class AddVisitFlowModel {
         placeRef = .newMapKit(draft)
         currentPage = 1
     }
-
-    func selectCustom(_ draft: CustomPlaceDraft) {
-        placeRef = .newCustom(draft)
-        currentPage = 1
-    }
 }

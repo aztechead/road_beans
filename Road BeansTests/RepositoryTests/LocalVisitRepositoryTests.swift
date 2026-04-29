@@ -39,7 +39,7 @@ struct LocalVisitRepositoryTests {
     @Test func emptyDrinksRejected() async throws {
         let (visits, _, _, _, _, _, _) = try makeStack()
         let command = CreateVisitCommand(
-            placeRef: .newCustom(.init(name: "X", kind: .other, address: nil)),
+            placeRef: .newMapKit(mapKitDraft(name: "X", kind: .coffeeShop, identifier: "empty-drinks")),
             date: Date.now,
             drinks: [],
             tags: [],
@@ -54,7 +54,7 @@ struct LocalVisitRepositoryTests {
     @Test func ratingClampedAndRounded() async throws {
         let (visits, _, _, _, _, _, context) = try makeStack()
         let command = CreateVisitCommand(
-            placeRef: .newCustom(.init(name: "X", kind: .other, address: nil)),
+            placeRef: .newMapKit(mapKitDraft(name: "X", kind: .coffeeShop, identifier: "rating")),
             date: Date.now,
             drinks: [
                 DrinkDraft(name: "A", category: .drip, rating: 5.7, tags: []),
@@ -77,7 +77,7 @@ struct LocalVisitRepositoryTests {
     @Test func saveMarksAllExpectedEntities() async throws {
         let (visits, _, _, _, _, sync, _) = try makeStack()
         let command = CreateVisitCommand(
-            placeRef: .newCustom(.init(name: "X", kind: .other, address: nil)),
+            placeRef: .newMapKit(mapKitDraft(name: "X", kind: .coffeeShop, identifier: "save")),
             date: Date.now,
             drinks: [DrinkDraft(name: "D", category: .drip, rating: 4, tags: ["smooth"])],
             tags: ["roadtrip"],
@@ -98,7 +98,7 @@ struct LocalVisitRepositoryTests {
         let (visits, _, _, _, _, _, context) = try makeStack()
         let id = try await visits.save(
             CreateVisitCommand(
-                placeRef: .newCustom(.init(name: "X", kind: .other, address: nil)),
+                placeRef: .newMapKit(mapKitDraft(name: "X", kind: .coffeeShop, identifier: "update")),
                 date: Date.now,
                 drinks: [DrinkDraft(name: "D", category: .drip, rating: 4, tags: [])],
                 tags: [],
@@ -129,7 +129,7 @@ struct LocalVisitRepositoryTests {
     @Test func deleteWritesTombstone() async throws {
         let (visits, _, _, _, tombstones, _, _) = try makeStack()
         let command = CreateVisitCommand(
-            placeRef: .newCustom(.init(name: "X", kind: .other, address: nil)),
+            placeRef: .newMapKit(mapKitDraft(name: "X", kind: .coffeeShop, identifier: "delete")),
             date: Date.now,
             drinks: [DrinkDraft(name: "D", category: .drip, rating: 4, tags: [])],
             tags: [],
@@ -147,7 +147,7 @@ struct LocalVisitRepositoryTests {
         let (visits, _, _, _, _, _, _) = try makeStack()
         let id = try await visits.save(
             CreateVisitCommand(
-                placeRef: .newCustom(.init(name: "Read Model", kind: .coffeeShop, address: nil)),
+                placeRef: .newMapKit(mapKitDraft(name: "Read Model", kind: .coffeeShop, identifier: "read-model")),
                 date: Date.now,
                 drinks: [DrinkDraft(name: "D", category: .drip, rating: 4, tags: [])],
                 tags: ["stop"],
@@ -180,5 +180,25 @@ struct LocalVisitRepositoryTests {
             UIColor.brown.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 16, height: 16))
         }.pngData()!
+    }
+
+    private func mapKitDraft(name: String, kind: PlaceKind, identifier: String) -> MapKitPlaceDraft {
+        MapKitPlaceDraft(
+            name: name,
+            kind: kind,
+            mapKitIdentifier: identifier,
+            mapKitName: name,
+            address: nil,
+            latitude: 34,
+            longitude: -112,
+            phoneNumber: nil,
+            websiteURL: nil,
+            streetNumber: nil,
+            streetName: nil,
+            city: nil,
+            region: nil,
+            postalCode: nil,
+            country: nil
+        )
     }
 }

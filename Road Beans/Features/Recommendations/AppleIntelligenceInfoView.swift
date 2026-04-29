@@ -81,7 +81,7 @@ struct AppleIntelligenceInfoView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("How we use Apple Intelligence")
                         .roadBeansStyle(.titleL)
-                    Text("Everything runs on your iPhone. No servers, no API keys, no third-party data sharing.")
+                    Text("Your saved Road Beans history stays on your iPhone. Apple Maps is used only to find nearby public places.")
                         .roadBeansStyle(.bodyS)
                         .foregroundStyle(.ink(.secondary))
                 }
@@ -184,7 +184,7 @@ struct AppleIntelligenceInfoView: View {
                     .roadBeansStyle(.titleM)
                     .foregroundStyle(.accent(.default))
 
-                Text("Road Beans Radar reads your saved visits, your tags, and your location. Apple Intelligence then ranks public Apple Maps places. None of this is sent to a server, uploaded to a third party, or used to train a remote model.")
+                Text("Road Beans Radar reads your saved visits, tags, and current location on-device. It asks Apple Maps for nearby public places, then ranks those places locally when Apple Intelligence is available. Your Road Beans history is not sent to a Road Beans server or third-party AI provider.")
                     .roadBeansStyle(.bodyS)
                     .foregroundStyle(.ink(.primary))
             }
@@ -264,7 +264,7 @@ private struct AppleIntelligenceCapabilities {
                 name: "Local-Only Pipeline",
                 frameworkName: "Privacy by design",
                 systemImage: "lock.shield",
-                summary: "Your taste profile, location, and visit history never leave the device. Apple Maps place lookups are public-place data only — they carry no personal context.",
+                summary: "Your taste profile and visit history stay on this device. Apple Maps place lookups use nearby public-place data, then Road Beans ranks the candidates locally.",
                 usage: "Used to keep your data yours.",
                 status: .active,
                 tint: .green

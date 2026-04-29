@@ -16,6 +16,14 @@ struct CommunityOnboardingView: View {
                     TasteProfileEditor(profile: $viewModel.profile)
                 }
 
+                Section("Community Terms") {
+                    Toggle("I agree to the community terms", isOn: $viewModel.acceptedTerms)
+
+                    Text("Road Beans has no tolerance for objectionable content or abusive users. Public ratings, display names, drink names, and tags must be appropriate. Users can report or block members, and offending community posts or members may be removed.")
+                        .roadBeansStyle(.caption)
+                        .foregroundStyle(.ink(.secondary))
+                }
+
                 if viewModel.state == .loading {
                     Section {
                         HStack {

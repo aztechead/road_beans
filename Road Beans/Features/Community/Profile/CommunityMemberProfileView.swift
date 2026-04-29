@@ -65,7 +65,7 @@ struct CommunityMemberProfileView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Your published visits, likes, and comments will be removed.")
+                Text("Your published visits and likes will be removed.")
             }
             .task {
                 if viewModel.state == .idle {

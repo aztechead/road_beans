@@ -11,6 +11,7 @@ struct PlaceListView: View {
     @Environment(\.nearbyRecommendationCandidateService) private var nearbyRecommendationCandidateService
     @Environment(\.recommendationEnrichmentService) private var recommendationEnrichmentService
     @Environment(\.recommendationRankingService) private var recommendationRankingService
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: PlaceListViewModel?
     @State private var recommendationViewModel: RecommendationDeckViewModel?
     @State private var navigationPath: [UUID] = []
@@ -57,6 +58,7 @@ struct PlaceListView: View {
             let model = PlaceListViewModel(places: placeRepository, visits: visitRepository)
             let recommendations = RecommendationDeckViewModel(
                 visits: visitRepository,
+                placeRepository: placeRepository,
                 locationPermission: locationPermissionService,
                 currentLocation: currentLocationProvider,
                 profileService: recommendationProfileService,
@@ -85,6 +87,15 @@ struct PlaceListView: View {
             Task {
                 await viewModel?.reload()
                 await recommendationViewModel?.reload()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await recommendationViewModel?.reload() }
+        }
+        .task {
+            for await status in locationPermissionService.statusChanges {
+                await recommendationViewModel?.handlePermissionChange(status)
             }
         }
     }

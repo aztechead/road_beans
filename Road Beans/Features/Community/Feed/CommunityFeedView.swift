@@ -73,6 +73,14 @@ struct CommunityFeedView: View {
         List {
             filterControls
 
+            if let message = viewModel.moderationMessage {
+                Section {
+                    Label(message, systemImage: "exclamationmark.shield")
+                        .foregroundStyle(.ink(.secondary))
+                }
+                .listRowBackground(Color.clear)
+            }
+
             if !viewModel.favoritesRows.isEmpty {
                 Section("Favorites") {
                     rows(viewModel.favoritesRows)
@@ -157,8 +165,6 @@ struct CommunityFeedView: View {
                 selectedVisit = SelectedCommunityVisit(id: row.id)
             } onLikeTapped: {
                 Task { await viewModel.toggleLike(row) }
-            } onCommentTapped: {
-                selectedVisit = SelectedCommunityVisit(id: row.id)
             }
             .listRowSeparator(.hidden)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -168,6 +174,19 @@ struct CommunityFeedView: View {
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
+                } else {
+                    Button(role: .destructive) {
+                        viewModel.blockAuthor(row)
+                    } label: {
+                        Label("Block User", systemImage: "person.crop.circle.badge.xmark")
+                    }
+
+                    Button {
+                        Task { await viewModel.report(row) }
+                    } label: {
+                        Label("Report", systemImage: "exclamationmark.bubble")
+                    }
+                    .tint(.orange)
                 }
             }
             .listRowBackground(Color.clear)

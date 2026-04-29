@@ -160,7 +160,8 @@ struct MapTabViewModelTests {
                 name: "Loves Travel Stop",
                 kind: .truckStop,
                 coordinate: CLLocationCoordinate2D(latitude: 35.4364, longitude: -112.482),
-                averageRating: 4.2
+                averageRating: 4.2,
+                reviewCount: 1
             )
         ]
 

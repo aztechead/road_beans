@@ -22,7 +22,6 @@ enum CommunityFeedSort: String, CaseIterable, Identifiable {
     case newest
     case rating
     case likes
-    case comments
 
     var id: String { rawValue }
 
@@ -31,7 +30,6 @@ enum CommunityFeedSort: String, CaseIterable, Identifiable {
         case .newest: "Newest"
         case .rating: "Rating"
         case .likes: "Likes"
-        case .comments: "Comments"
         }
     }
 }
@@ -48,6 +46,8 @@ final class CommunityFeedViewModel {
     var sort: CommunityFeedSort = .newest
     var isRefreshing = false
     var likedVisitIDs: Set<String> = []
+    var blockedAuthorIDs = CommunityModerationStore.blockedAuthorIDs
+    var moderationMessage: String?
 
     private struct CachedFeed {
         var favorites: [CommunityVisitRow]
@@ -83,14 +83,14 @@ final class CommunityFeedViewModel {
         for (key, entry) in entries {
             guard let filter = CommunityFeedFilter(rawValue: key) else { continue }
             cache[filter] = CachedFeed(
-                favorites: liveRows(entry.favorites),
-                everyone: liveRows(entry.everyone),
+                favorites: visibleRows(entry.favorites),
+                everyone: visibleRows(entry.everyone),
                 nextCursor: entry.nextCursor
             )
         }
         if let cached = cache[filter] {
-            favoritesRows = cached.favorites
-            everyoneRows = cached.everyone
+            favoritesRows = visibleRows(cached.favorites)
+            everyoneRows = visibleRows(cached.everyone)
             nextCursor = cached.nextCursor
             if !cached.favorites.isEmpty || !cached.everyone.isEmpty {
                 state = .loaded
@@ -114,8 +114,8 @@ final class CommunityFeedViewModel {
     func selectFilter(_ newFilter: CommunityFeedFilter) {
         filter = newFilter
         if let cached = cache[newFilter] {
-            favoritesRows = cached.favorites
-            everyoneRows = cached.everyone
+            favoritesRows = visibleRows(cached.favorites)
+            everyoneRows = visibleRows(cached.everyone)
             nextCursor = cached.nextCursor
         } else {
             favoritesRows = []
@@ -163,21 +163,21 @@ final class CommunityFeedViewModel {
                     authorIDsToExclude: excludeSelf,
                     label: "everyone"
                 )
-                favoritesRows = liveRows(sorted(favoritePage.rows))
-                everyoneRows = liveRows(sorted(everyonePage.rows))
+                favoritesRows = visibleRows(sorted(favoritePage.rows))
+                everyoneRows = visibleRows(sorted(everyonePage.rows))
                 nextCursor = sort == .newest ? everyonePage.nextCursor : nil
                 cache[.all] = CachedFeed(
-                    favorites: liveRows(favoritesRows),
-                    everyone: liveRows(everyoneRows),
+                    favorites: favoritesRows,
+                    everyone: everyoneRows,
                     nextCursor: nextCursor
                 )
                 await persistCacheToDisk()
             case .favorites:
                 let likedRows = try await service.fetchLikedVisitsByCurrentUser()
                 favoritesRows = []
-                everyoneRows = liveRows(sorted(likedRows))
+                everyoneRows = visibleRows(sorted(likedRows))
                 nextCursor = nil
-                cache[.favorites] = CachedFeed(favorites: [], everyone: liveRows(everyoneRows), nextCursor: nil)
+                cache[.favorites] = CachedFeed(favorites: [], everyone: everyoneRows, nextCursor: nil)
                 await persistCacheToDisk()
             case .mine:
                 let minePage = try await loadPage(
@@ -188,9 +188,9 @@ final class CommunityFeedViewModel {
                     label: "mine"
                 )
                 favoritesRows = []
-                everyoneRows = liveRows(sorted(minePage.rows))
+                everyoneRows = visibleRows(sorted(minePage.rows))
                 nextCursor = sort == .newest ? minePage.nextCursor : nil
-                cache[.mine] = CachedFeed(favorites: [], everyone: liveRows(everyoneRows), nextCursor: nextCursor)
+                cache[.mine] = CachedFeed(favorites: [], everyone: everyoneRows, nextCursor: nextCursor)
                 await persistCacheToDisk()
             }
             state = .loaded
@@ -215,7 +215,7 @@ final class CommunityFeedViewModel {
                 authorIDsToInclude: include,
                 authorIDsToExclude: exclude
             )
-            everyoneRows.append(contentsOf: liveRows(sorted(page.rows)))
+            everyoneRows.append(contentsOf: visibleRows(sorted(page.rows)))
             self.nextCursor = page.nextCursor
         } catch {
             state = .failed("Road Beans could not load more community visits.")
@@ -260,6 +260,30 @@ final class CommunityFeedViewModel {
         }
     }
 
+    func report(_ row: CommunityVisitRow) async {
+        moderationMessage = nil
+        do {
+            try await service.reportVisit(
+                CommunityReportDraft(
+                    visitRecordName: row.id,
+                    reportedAuthorUserRecordID: row.authorUserRecordID,
+                    reason: "Reported from community feed"
+                )
+            )
+            moderationMessage = "Report sent. Road Beans will review it within 24 hours."
+        } catch {
+            logger.error("Community report failed for \(row.id, privacy: .public): \(String(describing: error), privacy: .public)")
+            moderationMessage = "Road Beans could not send this report."
+        }
+    }
+
+    func blockAuthor(_ row: CommunityVisitRow) {
+        CommunityModerationStore.block(authorUserRecordID: row.authorUserRecordID)
+        blockedAuthorIDs = CommunityModerationStore.blockedAuthorIDs
+        removeAuthor(row.authorUserRecordID)
+        moderationMessage = "Blocked \(row.authorDisplayName)."
+    }
+
     private func loadPage(
         cursor: String?,
         limit: Int,
@@ -298,18 +322,23 @@ final class CommunityFeedViewModel {
                 }
                 return $0.likeCount > $1.likeCount
             }
-        case .comments:
-            rows.sorted {
-                if $0.commentCount == $1.commentCount {
-                    return $0.publishedAt > $1.publishedAt
-                }
-                return $0.commentCount > $1.commentCount
-            }
         }
     }
 
     private func liveRows(_ rows: [CommunityVisitRow]) -> [CommunityVisitRow] {
         rows.filter { !$0.id.hasPrefix("_schema_") }
+    }
+
+    private func visibleRows(_ rows: [CommunityVisitRow]) -> [CommunityVisitRow] {
+        liveRows(rows).filter { row in
+            !blockedAuthorIDs.contains(row.authorUserRecordID)
+                && !CommunityContentFilter.containsBlockedContent([
+                    row.authorDisplayName,
+                    row.placeName,
+                    row.drinkSummary,
+                    row.tagSummary
+                ])
+        }
     }
 
     private func hydrateLikedStateForVisibleRows() async {
@@ -345,6 +374,12 @@ final class CommunityFeedViewModel {
             rows.removeAll { $0.id == recordName }
         }
         likedVisitIDs.remove(recordName)
+    }
+
+    private func removeAuthor(_ authorUserRecordID: String) {
+        updateRows { rows in
+            rows.removeAll { $0.authorUserRecordID == authorUserRecordID }
+        }
     }
 
     private func updateRows(_ update: (inout [CommunityVisitRow]) -> Void) {

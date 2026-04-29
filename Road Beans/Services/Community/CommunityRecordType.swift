@@ -4,7 +4,7 @@ enum CommunityRecordType {
     nonisolated static let member = "CommunityMember"
     nonisolated static let visit = "CommunityVisit"
     nonisolated static let like = "CommunityLike"
-    nonisolated static let comment = "CommunityComment"
+    nonisolated static let report = "CommunityReport"
 }
 
 enum CommunityServiceError: Error, Sendable, Equatable {

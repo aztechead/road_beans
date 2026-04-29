@@ -60,45 +60,6 @@ struct CommunityVisitDetailView: View {
                         CommunityVisitRowView(row: detail.row, isFavorite: false)
                     }
 
-                    Section("Comments") {
-                        ForEach(detail.comments) { comment in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(comment.authorDisplayName)
-                                    .font(.headline)
-                                Text(comment.text)
-                                Text(comment.timestamp.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    Task { await viewModel.deleteComment(id: comment.id) }
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                        }
-
-                        HStack {
-                            RoadBeansClearableTextField(
-                                "Add a comment",
-                                text: Binding(
-                                    get: { viewModel.commentText },
-                                    set: { viewModel.commentText = $0 }
-                                )
-                            )
-                            Button {
-                                Task { await viewModel.addComment() }
-                            } label: {
-                                if viewModel.isPostingComment {
-                                    ProgressView()
-                                } else {
-                                    Image(systemName: "paperplane.fill")
-                                }
-                            }
-                            .disabled(viewModel.commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isPostingComment)
-                        }
-                    }
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
@@ -135,7 +96,7 @@ struct CommunityVisitDetailView: View {
                     }
                     Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("This removes your published community review, likes, and comments for this visit.")
+                    Text("This removes your published community review and likes for this visit.")
                 }
             }
         }

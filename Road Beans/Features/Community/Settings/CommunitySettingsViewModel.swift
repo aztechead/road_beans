@@ -37,7 +37,9 @@ final class CommunitySettingsViewModel {
 
     var canSave: Bool {
         let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmedName.isEmpty && (trimmedName != originalDisplayName || profile != originalProfile)
+        return !trimmedName.isEmpty
+            && !CommunityContentFilter.containsBlockedContent(trimmedName)
+            && (trimmedName != originalDisplayName || profile != originalProfile)
     }
 
     var shouldShowUsernameWarning: Bool {
@@ -80,6 +82,10 @@ final class CommunitySettingsViewModel {
         let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
             fail("Enter a username before saving.")
+            return false
+        }
+        guard !CommunityContentFilter.containsBlockedContent(trimmedName) else {
+            fail("Choose a different username.")
             return false
         }
 

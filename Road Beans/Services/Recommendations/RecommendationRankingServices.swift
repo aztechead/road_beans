@@ -11,13 +11,12 @@ enum RecommendationRanking {
 
     static func personalHistoryReason(for candidate: RecommendationCandidate) -> String? {
         guard let rating = candidate.localAverageRating, candidate.localVisitCount > 0 else { return nil }
-        let formatted = String(format: "%.1f", rating)
-        if let distance = candidate.distanceMeters, distance > 0 {
-            let miles = distance / 1_609.344
-            let distanceCopy = miles < 0.1 ? "right nearby" : String(format: "%.1f miles away", miles)
-            return "You rated this stop \(formatted) beans before, and it is \(distanceCopy)."
-        }
-        return "You rated this stop \(formatted) beans before, so here it is again."
+        return "You rated this stop \(String(format: "%.1f", rating)) beans before."
+    }
+
+    static func formattedDistance(_ meters: Double) -> String {
+        let miles = meters / 1_609.344
+        return String(format: "%.2f mi", miles)
     }
 
     static func bubbleHighlyRatedLocal(_ recs: [PlaceRecommendation], lookup: [String: EnrichedRecommendationCandidate]) -> [PlaceRecommendation] {
@@ -94,6 +93,7 @@ struct HeuristicRecommendationRankingService: RecommendationRankingService {
             id: candidate.id,
             source: candidate.source,
             placeID: candidate.placeID,
+            mapKitIdentifier: candidate.mapKitIdentifier,
             placeName: candidate.name,
             kind: candidate.kind,
             address: candidate.address,
@@ -282,7 +282,8 @@ struct FoundationModelsRecommendationRankingService: RecommendationRankingServic
             Reason format — STRICT:
             - Each reason is one complete sentence of 8 to 20 words, ending with a period.
             - Write in second person ("you", "your taste") or describe the place directly.
-            - Reference concrete attributes: distance, kind, name, matched tags or drinks.
+            - Reference concrete attributes: kind, name, matched tags or drinks.
+            - Do not mention numeric distance or proximity.
             - Never output fragments like "Has website", "Has phone", "Distance", or single nouns.
             - Never output "key: value" pairs (e.g. "localRating: none", "distanceMeters: 600").
             - Never echo field labels: dislikedDrinks, preferredTags, localRating, distanceMeters,
@@ -343,6 +344,7 @@ struct FoundationModelsRecommendationRankingService: RecommendationRankingServic
                 id: candidate.id,
                 source: candidate.source,
                 placeID: candidate.placeID,
+                mapKitIdentifier: candidate.mapKitIdentifier,
                 placeName: candidate.name,
                 kind: candidate.kind,
                 address: candidate.address,
@@ -434,7 +436,6 @@ struct FoundationModelsRecommendationRankingService: RecommendationRankingServic
             id: \(candidate.id)
             name: \(candidate.name)
             kind: \(candidate.kind.displayName)
-            distanceMeters: \(Int(candidate.distanceMeters ?? 0))
             localRating: \(candidate.localAverageRating.map { String(format: "%.1f", $0) } ?? "none")
             localVisits: \(candidate.localVisitCount)
             signals: \(enriched.publicSignals.joined(separator: ", "))

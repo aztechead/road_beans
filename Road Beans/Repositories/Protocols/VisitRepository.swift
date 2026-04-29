@@ -3,6 +3,7 @@ import Foundation
 enum VisitValidationError: Error, Equatable {
     case missingPlace
     case missingDrinks
+    case unsearchablePlace
 }
 
 enum VisitRepositoryError: Error, Equatable {

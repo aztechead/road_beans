@@ -24,6 +24,7 @@ protocol CommunityService: Sendable {
     func updatePublishedVisit(_ visit: CommunityVisitDraft) async throws
     func deletePublishedVisit(localVisitID: UUID) async throws
     func deleteVisit(recordName: String) async throws
+    func reportVisit(_ report: CommunityReportDraft) async throws
 
     func fetchFeedPage(
         cursor: String?,
@@ -42,9 +43,6 @@ protocol CommunityService: Sendable {
     func unlike(visitRecordName: String) async throws
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool
     func likedVisitIDsByCurrentUser(in recordNames: Set<String>) async throws -> Set<String>
-    func comments(forVisitRecordName recordName: String) async throws -> [CommunityCommentRow]
-    func addComment(toVisitRecordName recordName: String, text: String) async throws -> CommunityCommentRow
-    func deleteComment(recordName: String) async throws
 }
 
 extension CommunityService {

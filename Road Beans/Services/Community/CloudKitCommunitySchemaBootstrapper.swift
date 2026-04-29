@@ -21,7 +21,7 @@ actor CloudKitCommunitySchemaBootstrapper {
             let memberID = CKRecord.ID(recordName: "_schema_member_\(userID)")
             let visitID = CKRecord.ID(recordName: "_schema_visit_\(userID)")
             let likeID = CKRecord.ID(recordName: "_schema_like_\(userID)")
-            let commentID = CKRecord.ID(recordName: "_schema_comment_\(userID)")
+            let reportID = CKRecord.ID(recordName: "_schema_report_\(userID)")
             let now = Date.now
 
             let member = CKRecord(recordType: CommunityRecordType.member, recordID: memberID)
@@ -54,18 +54,18 @@ actor CloudKitCommunitySchemaBootstrapper {
             like["userDisplayName"] = "Schema Bootstrap" as NSString
             like["timestamp"] = now as NSDate
 
-            let comment = CKRecord(recordType: CommunityRecordType.comment, recordID: commentID)
-            comment["communityVisitRecordName"] = visitID.recordName as NSString
-            comment["userRecordID"] = userID as NSString
-            comment["userDisplayName"] = "Schema Bootstrap" as NSString
-            comment["text"] = "Schema bootstrap comment" as NSString
-            comment["timestamp"] = now as NSDate
+            let report = CKRecord(recordType: CommunityRecordType.report, recordID: reportID)
+            report["communityVisitRecordName"] = visitID.recordName as NSString
+            report["reportedAuthorUserRecordID"] = userID as NSString
+            report["reporterUserRecordID"] = userID as NSString
+            report["reason"] = "Schema bootstrap report" as NSString
+            report["createdAt"] = now as NSDate
 
-            for record in [member, visit, like, comment] {
+            for record in [member, visit, like, report] {
                 _ = try await save(record)
             }
 
-            await deleteBestEffort([commentID, likeID, visitID, memberID])
+            await deleteBestEffort([reportID, likeID, visitID, memberID])
             logger.info("Community Development schema bootstrap completed")
         } catch {
             logger.error("Community Development schema bootstrap failed: \(String(describing: error), privacy: .public)")

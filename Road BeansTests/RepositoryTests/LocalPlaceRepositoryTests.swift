@@ -71,15 +71,15 @@ struct LocalPlaceRepositoryTests {
         #expect(id1 != id2)
     }
 
-    @Test func customNeverMerges() async throws {
+    @Test func customPlaceCreationIsRejected() async throws {
         let (repo, _, sync, _) = try makeRepo()
         let draft = CustomPlaceDraft(name: "My Stop", kind: .other, address: nil)
 
-        let id1 = try await repo.findOrCreate(reference: .newCustom(draft))
-        let id2 = try await repo.findOrCreate(reference: .newCustom(draft))
+        await #expect(throws: VisitValidationError.unsearchablePlace) {
+            _ = try await repo.findOrCreate(reference: .newCustom(draft))
+        }
 
-        #expect(id1 != id2)
-        #expect(await sync.recordedCalls.count == 2)
+        #expect(await sync.recordedCalls.isEmpty)
     }
 
     @Test func summariesAndDetailComputeAverageRatings() async throws {
@@ -122,7 +122,7 @@ struct LocalPlaceRepositoryTests {
     @Test func updateChangesEditableFieldsAndMarksDirty() async throws {
         let (repo, _, sync, _) = try makeRepo()
         let id = try await repo.findOrCreate(
-            reference: .newCustom(CustomPlaceDraft(name: "Old", kind: .truckStop, address: nil))
+            reference: .newMapKit(mapKitDraft(name: "Old", mapKitIdentifier: "old"))
         )
 
         try await repo.update(
@@ -144,7 +144,7 @@ struct LocalPlaceRepositoryTests {
     @Test func deleteRemovesPlaceAndWritesTombstone() async throws {
         let (repo, _, _, tombstones) = try makeRepo()
         let id = try await repo.findOrCreate(
-            reference: .newCustom(CustomPlaceDraft(name: "Delete Me", kind: .truckStop, address: nil))
+            reference: .newMapKit(mapKitDraft(name: "Delete Me", mapKitIdentifier: "delete-me"))
         )
 
         try await repo.delete(DeletePlaceCommand(id: id))

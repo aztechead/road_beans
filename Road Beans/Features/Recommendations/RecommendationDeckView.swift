@@ -5,6 +5,7 @@ import SwiftUI
 struct RecommendationDeckView: View {
     @Bindable var viewModel: RecommendationDeckViewModel
     @State private var showingAppleIntelligenceInfo = false
+    @State private var isBrewingTasteProfile = false
     @AppStorage("recommendationsCollapsed") private var isCollapsed = true
 
     var body: some View {
@@ -27,6 +28,8 @@ struct RecommendationDeckView: View {
                     statusCard(title: "Scanning nearby stops", message: "Checking Apple Maps places against your Road Beans history.", systemImage: "dot.radiowaves.left.and.right")
                 } else if !viewModel.recommendations.isEmpty {
                     deck
+                } else {
+                    statusCard(title: "Radar is quiet", message: "No nearby coffee or road stops matched your taste profile.", systemImage: "antenna.radiowaves.left.and.right.slash")
                 }
             }
         }
@@ -49,14 +52,25 @@ struct RecommendationDeckView: View {
                 Text("Find coffee and stops your way.")
                     .roadBeansStyle(.titleL)
 
-                Text("Reads your saved visits on this device, your location, and Apple Maps place data. Apple Intelligence ranks the picks. Nothing leaves your iPhone.")
+                Text("Your saved visits stay on this device. Road Beans uses Apple Maps to find nearby public places, then ranks them on-device when Apple Intelligence is available.")
                     .roadBeansStyle(.bodyS)
                     .foregroundStyle(.ink(.secondary))
 
                 optInDataGuide
 
-                RoadBeansButton(title: "Brew your Taste Profile", systemImage: "location.magnifyingglass") {
-                    Task { await viewModel.enable() }
+                BrewTasteProfileButton(isBrewing: isBrewingTasteProfile || viewModel.isEnabling) {
+                    isBrewingTasteProfile = true
+                    Task {
+                        await viewModel.enable()
+                        try? await Task.sleep(for: .milliseconds(750))
+                        isBrewingTasteProfile = false
+                    }
+                }
+
+                if !viewModel.optInProgress.isComplete {
+                    Text("\(viewModel.optInProgress.ratedVisits) of \(viewModel.optInProgress.required) ratings logged. Tap to review what Radar still needs.")
+                        .roadBeansStyle(.caption)
+                        .foregroundStyle(.ink(.secondary))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -176,12 +190,22 @@ struct RecommendationDeckView: View {
                     }
                 }
 
+                if let message = viewModel.rankingStatusMessage {
+                    Label(message, systemImage: "exclamationmark.triangle.fill")
+                        .roadBeansStyle(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: RoadBeansSpacing.md) {
                         ForEach(viewModel.recommendations) { recommendation in
-                            RecommendationCard(recommendation: recommendation) {
+                            RecommendationCard(
+                                recommendation: recommendation,
+                                onSave: { try await viewModel.saveRecommendationAsPlace(recommendation) },
+                                onDismiss: {
                                 viewModel.dismiss(recommendation)
-                            }
+                            })
                         }
                     }
                     .padding(.bottom, 6)
@@ -290,9 +314,118 @@ struct RecommendationDeckView: View {
     }
 }
 
+private struct BrewTasteProfileButton: View {
+    let isBrewing: Bool
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Capsule()
+                    .fill(buttonFill)
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.accent(.on).opacity(isBrewing ? 0.45 : 0), lineWidth: 1)
+                    }
+
+                if isBrewing {
+                    RadarBrewAnimation()
+                        .clipShape(Capsule())
+                        .transition(.opacity)
+                }
+
+                HStack(spacing: RoadBeansSpacing.sm) {
+                    ZStack {
+                        Image(systemName: "location.magnifyingglass")
+                            .opacity(isBrewing ? 0 : 1)
+
+                        if isBrewing {
+                            BeanMark(state: .full, size: 18)
+                                .foregroundStyle(Color.accent(.on))
+                                .rotationEffect(.degrees(-16))
+                        }
+                    }
+                    .frame(width: 24, height: 24)
+
+                    Text(isBrewing ? "Brewing Taste Profile" : "Brew your Taste Profile")
+                        .roadBeansStyle(.label)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    if isBrewing {
+                        Image(systemName: "sparkles")
+                            .font(.footnote.weight(.bold))
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .foregroundStyle(Color.accent(.on))
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, RoadBeansSpacing.lg)
+            }
+            .frame(minHeight: 48)
+            .contentShape(Capsule())
+            .animation(.easeInOut(duration: 0.22), value: isBrewing)
+        }
+        .buttonStyle(BrewButtonStyle())
+        .disabled(isBrewing)
+        .accessibilityLabel(isBrewing ? "Brewing taste profile" : "Brew your Taste Profile")
+    }
+
+    private var buttonFill: some ShapeStyle {
+        LinearGradient(
+            colors: [
+                Color.accent(.pressed),
+                Color.accent(.default),
+                Color.state(.success).opacity(0.9)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+}
+
+private struct BrewButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(RoadBeansMotion.snap, value: configuration.isPressed)
+    }
+}
+
+private struct RadarBrewAnimation: View {
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let phase = timeline.date.timeIntervalSinceReferenceDate
+
+            ZStack {
+                ForEach(0..<3, id: \.self) { index in
+                    let progress = (phase * 0.9 + Double(index) / 3).truncatingRemainder(dividingBy: 1)
+                    Capsule()
+                        .stroke(Color.accent(.on).opacity(0.26 * (1 - progress)), lineWidth: 1.4)
+                        .scaleEffect(x: 0.12 + progress * 1.5, y: 0.42 + progress * 0.9)
+                }
+
+                ForEach(0..<5, id: \.self) { index in
+                    BeanMark(state: .full, size: 8 + CGFloat(index % 2) * 2)
+                        .opacity(0.2 + 0.35 * abs(sin(phase * 2 + Double(index))))
+                        .rotationEffect(.degrees(Double(index) * 34 + phase * 28))
+                        .offset(
+                            x: CGFloat(cos(phase * 1.4 + Double(index))) * CGFloat(32 + index * 18),
+                            y: CGFloat(sin(phase * 1.9 + Double(index))) * 9
+                        )
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 private struct RecommendationCard: View {
     let recommendation: PlaceRecommendation
+    var onSave: () async throws -> UUID
     var onDismiss: () -> Void
+    @State private var savedPlaceID: UUID?
+    @State private var isSaving = false
 
     private static let cardWidth: CGFloat = 330
     private static let cardHeight: CGFloat = 360
@@ -320,10 +453,11 @@ private struct RecommendationCard: View {
                 Spacer(minLength: 8)
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(recommendation.score)")
-                        .font(.system(size: 26, weight: .black, design: .rounded))
-                        .foregroundStyle(recommendation.kind.accentColor)
                     Text(recommendation.confidence.displayName)
+                        .roadBeansStyle(.label)
+                        .foregroundStyle(recommendation.kind.accentColor)
+                        .multilineTextAlignment(.trailing)
+                    Text("\(recommendation.score)% fit")
                         .roadBeansStyle(.caption)
                         .foregroundStyle(.ink(.secondary))
                 }
@@ -366,7 +500,7 @@ private struct RecommendationCard: View {
             Spacer(minLength: 0)
 
             HStack(spacing: RoadBeansSpacing.sm) {
-                if let placeID = recommendation.placeID {
+                if let placeID = savedPlaceID ?? recommendation.placeID {
                     NavigationLink(value: placeID) {
                         Label("View", systemImage: "chevron.right.circle.fill")
                             .lineLimit(1)
@@ -375,18 +509,35 @@ private struct RecommendationCard: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(recommendation.kind.accentColor)
+                } else if recommendation.source == .mapKit || recommendation.source == .external {
+                    Button {
+                        Task {
+                            isSaving = true
+                            defer { isSaving = false }
+                            savedPlaceID = try? await onSave()
+                        }
+                    } label: {
+                        Label(isSaving ? "Saving" : "Save", systemImage: isSaving ? "hourglass" : "plus.circle.fill")
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(recommendation.kind.accentColor)
+                    .disabled(isSaving)
                 }
 
                 Button {
                     openInMaps()
                 } label: {
-                    Label("Navigate", systemImage: "map.fill")
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                    Image(systemName: "map.fill")
+                        .frame(width: 24, height: 24)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .disabled(recommendation.coordinate == nil)
+                .accessibilityLabel("Open in Maps")
+                .accessibilityHint("Opens Apple Maps for navigation")
 
                 Button {
                     onDismiss()
@@ -425,8 +576,7 @@ private struct RecommendationCard: View {
     }
 
     private func distanceString(_ meters: Double) -> String {
-        let miles = meters / 1_609.344
-        return miles < 0.1 ? "Nearby" : "\(String(format: "%.1f", miles)) mi"
+        RecommendationRanking.formattedDistance(meters)
     }
 
     private func openInMaps() {

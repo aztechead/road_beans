@@ -45,19 +45,6 @@ struct AddVisitFlowModelPlaceTests {
         #expect(model.currentPage == 1)
     }
 
-    @Test func selectCustomSetsRefAndAdvancesPage() {
-        let model = makeModel()
-
-        model.selectCustom(CustomPlaceDraft(name: "My Stop", kind: .other, address: nil))
-
-        if case .newCustom(let selected) = model.placeRef {
-            #expect(selected.name == "My Stop")
-        } else {
-            Issue.record("Expected newCustom place reference")
-        }
-        #expect(model.currentPage == 1)
-    }
-
     @Test func searchEmptyResultSetsEmptyState() async throws {
         let model = makeModel()
 

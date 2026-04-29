@@ -111,7 +111,7 @@ struct Road_BeansApp: App {
         self.photoProcessingService = photoProcessing
         self.recommendationProfileService = LocalRecommendationProfileService()
         self.nearbyRecommendationCandidateService = AppleNativeRecommendationCandidateService(placeRepository: places)
-        self.recommendationEnrichmentService = PassthroughRecommendationEnrichmentService()
+        self.recommendationEnrichmentService = CommunityAwareRecommendationEnrichmentService(community: community)
         #if canImport(FoundationModels)
         self.recommendationRankingService = FoundationModelsRecommendationRankingService()
         #else
