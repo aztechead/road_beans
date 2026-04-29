@@ -7,12 +7,13 @@ struct CommunityPlaceAnnotation: Identifiable, Sendable {
     let kind: PlaceKind
     let coordinate: CLLocationCoordinate2D
     let averageRating: Double
+    let reviewCount: Int
 
     static func group(from rows: [CommunityVisitRow]) -> [CommunityPlaceAnnotation] {
         var groups: [String: [CommunityVisitRow]] = [:]
         for row in rows {
             guard let lat = row.placeLatitude, let lon = row.placeLongitude else { continue }
-            let key = row.placeMapKitIdentifier ?? "\(lat),\(lon)"
+            let key = groupKey(for: row, latitude: lat, longitude: lon)
             groups[key, default: []].append(row)
         }
         return groups.compactMap { key, rows in
@@ -22,13 +23,27 @@ struct CommunityPlaceAnnotation: Identifiable, Sendable {
             let kind = PlaceKind(rawValue: first.placeKindRawValue) ?? .other
             let average = rows.map(\.beanRating).reduce(0, +) / Double(rows.count)
             return CommunityPlaceAnnotation(
-                id: key,
+                id: first.placeMapKitIdentifier ?? key,
                 name: first.placeName,
                 kind: kind,
                 coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                averageRating: average
+                averageRating: average,
+                reviewCount: rows.count
             )
         }
+    }
+
+    private static func groupKey(for row: CommunityVisitRow, latitude: Double, longitude: Double) -> String {
+        if let identifier = row.placeMapKitIdentifier, !identifier.isEmpty {
+            return "mapkit:\(identifier)"
+        }
+
+        let normalizedName = row.placeName
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let roundedLatitude = (latitude * 1_000).rounded() / 1_000
+        let roundedLongitude = (longitude * 1_000).rounded() / 1_000
+        return "place:\(normalizedName):\(roundedLatitude):\(roundedLongitude)"
     }
 }
 

@@ -30,16 +30,8 @@ final class LocalPlaceRepository: PlaceRepository {
             await sync.markDirty(.place, id: place.id)
             return place.id
 
-        case .newCustom(let draft):
-            let place = Place()
-            place.name = draft.name
-            place.kind = draft.kind
-            place.source = .custom
-            place.address = draft.address
-            context.insert(place)
-            try context.save()
-            await sync.markDirty(.place, id: place.id)
-            return place.id
+        case .newCustom:
+            throw VisitValidationError.unsearchablePlace
         }
     }
 

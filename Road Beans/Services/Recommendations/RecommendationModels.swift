@@ -99,6 +99,7 @@ struct PlaceRecommendation: Identifiable, Sendable {
     let id: String
     let source: RecommendationPlaceSource
     let placeID: UUID?
+    let mapKitIdentifier: String?
     let placeName: String
     let kind: PlaceKind
     let address: String?

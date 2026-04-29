@@ -7,6 +7,7 @@ import OSLog
 final class CommunityOnboardingViewModel {
     var displayName: String
     var profile: TasteProfile
+    var acceptedTerms = CommunityModerationStore.hasAcceptedTerms
     var state: ScreenState = .idle
     var errorMessage: String?
 
@@ -27,12 +28,24 @@ final class CommunityOnboardingViewModel {
     }
 
     var canJoin: Bool {
-        !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return acceptedTerms
+            && !trimmedName.isEmpty
+            && !CommunityContentFilter.containsBlockedContent(trimmedName)
     }
 
     func join() async -> Bool {
-        guard canJoin else {
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard acceptedTerms else {
+            fail("Agree to the community terms before joining.")
+            return false
+        }
+        guard !trimmedName.isEmpty else {
             fail("Add a display name to join.")
+            return false
+        }
+        guard !CommunityContentFilter.containsBlockedContent(trimmedName) else {
+            fail("Choose a different display name.")
             return false
         }
 
@@ -42,11 +55,12 @@ final class CommunityOnboardingViewModel {
             let visits = await existingVisits()
             try await withTimeout(seconds: 20) {
                 try await self.service.join(
-                    displayName: self.displayName,
+                    displayName: trimmedName,
                     profile: self.profile,
                     existingVisits: visits
                 )
             }
+            CommunityModerationStore.hasAcceptedTerms = true
             state = .loaded
             return true
         } catch {

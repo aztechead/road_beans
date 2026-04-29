@@ -4,7 +4,7 @@ import Testing
 
 @Suite("InMemoryCommunityService")
 struct InMemoryCommunityServiceTests {
-    @Test func joinPublishLikeAndComment() async throws {
+    @Test func joinPublishAndLike() async throws {
         let service = InMemoryCommunityService(currentUserRecordID: "me")
         try await service.join(displayName: "Me", profile: .midpoint, existingVisits: [])
         let visit = CommunityVisitDraft(
@@ -22,13 +22,10 @@ struct InMemoryCommunityServiceTests {
 
         let recordName = try await service.publish(visit)
         try await service.like(visitRecordName: recordName)
-        _ = try await service.addComment(toVisitRecordName: recordName, text: "Great stop")
 
         let detail = try await service.fetchVisitDetail(recordName: recordName)
         #expect(detail?.likedByCurrentUser == true)
-        #expect(detail?.comments.map(\.text) == ["Great stop"])
         #expect(detail?.row.likeCount == 1)
-        #expect(detail?.row.commentCount == 1)
     }
 
     @Test func leaveCanRemoveAuthoredRecords() async throws {
@@ -72,7 +69,6 @@ struct InMemoryCommunityServiceTests {
         try await service.join(displayName: "Me", profile: .midpoint, existingVisits: [])
         let recordName = try await service.publish(draft())
         try await service.like(visitRecordName: recordName)
-        _ = try await service.addComment(toVisitRecordName: recordName, text: "Deleting this")
 
         try await service.deleteVisit(recordName: recordName)
 

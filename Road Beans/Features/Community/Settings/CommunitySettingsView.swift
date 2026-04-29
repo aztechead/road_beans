@@ -114,7 +114,7 @@ struct CommunitySettingsView: View {
             } header: {
                 Text("Community Data")
             } footer: {
-                Text("Leaving removes your community profile, likes, and comments. Your published ratings are only deleted when the toggle is on.")
+                Text("Leaving removes your community profile and likes. Your published ratings are only deleted when the toggle is on.")
             }
 
             Section {
@@ -122,6 +122,18 @@ struct CommunitySettingsView: View {
                     .foregroundStyle(.ink(.secondary))
             } header: {
                 Text("Feed")
+            }
+
+            Section {
+                Link(destination: URL(string: "mailto:nctightend@gmail.com?subject=Road%20Beans%20Community%20Report")!) {
+                    Label("Report inappropriate activity", systemImage: "envelope")
+                }
+
+                Text("Reports are reviewed within 24 hours. Road Beans may remove offending posts and eject users who provide objectionable content.")
+                    .roadBeansStyle(.caption)
+                    .foregroundStyle(.ink(.secondary))
+            } header: {
+                Text("Safety")
             }
 
             if let actionMessage = viewModel.actionMessage {
@@ -149,9 +161,9 @@ struct CommunitySettingsView: View {
 
     private var leaveConfirmationMessage: String {
         if viewModel.deleteRatingsWhenLeaving {
-            return "Your community profile, likes, comments, and published ratings will be removed."
+            return "Your community profile, likes, and published ratings will be removed."
         }
-        return "Your community profile, likes, and comments will be removed. Published ratings will remain visible under your current username."
+        return "Your community profile and likes will be removed. Published ratings will remain visible under your current username."
     }
 }
 

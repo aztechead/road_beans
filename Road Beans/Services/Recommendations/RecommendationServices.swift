@@ -34,7 +34,8 @@ struct LocalRecommendationProfileService: RecommendationProfileService {
 
     func buildProfile(from visits: [RecentVisitRow]) async throws -> RecommendationTasteProfile? {
         let ratedVisits = visits.filter { $0.visit.averageRating != nil }
-        guard ratedVisits.count >= RecommendationTasteProfile.minimumVisitCount else { return nil }
+        let ratingCount = ratedVisits.reduce(0) { $0 + $1.visit.drinkCount }
+        guard ratingCount >= RecommendationTasteProfile.minimumVisitCount else { return nil }
 
         let tagStats = aggregateStats(items: ratedVisits.flatMap { row in
             row.visit.tagNames.map { ($0, row.visit.averageRating ?? 3) }
@@ -130,7 +131,7 @@ final class AppleNativeRecommendationCandidateService: NearbyRecommendationCandi
         async let local = localCandidates(near: coordinate, radiusMeters: radiusMeters)
         async let discovered = mapKitCandidates(near: coordinate, radiusMeters: radiusMeters)
         let allowedKinds = Set(profile.preferredPlaceKinds.isEmpty ? [.coffeeShop] : profile.preferredPlaceKinds)
-        let merged = deduplicated(try await local + discovered)
+        let merged = Self.deduplicated(try await local + discovered)
             .filter { allowedKinds.contains($0.kind) }
         let highlyRated = merged.filter(RecommendationRanking.isHighlyRatedLocal)
         let rest = merged
@@ -198,23 +199,38 @@ final class AppleNativeRecommendationCandidateService: NearbyRecommendationCandi
         }
     }
 
-    private func deduplicated(_ candidates: [RecommendationCandidate]) -> [RecommendationCandidate] {
+    nonisolated static func deduplicated(_ candidates: [RecommendationCandidate]) -> [RecommendationCandidate] {
         var seen: Set<String> = []
         var unique: [RecommendationCandidate] = []
 
         for candidate in candidates {
-            let key = [
-                candidate.name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current),
-                candidate.address?.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            let key = candidate.mapKitIdentifier.map { "mapkit:\($0)" } ?? [
+                normalized(candidate.name),
+                candidate.address.map(normalized),
+                nearbyCoordinateKey(candidate.coordinate)
             ]
-                .compactMap { $0 }
-                .joined(separator: "|")
+            .compactMap { $0 }
+            .joined(separator: "|")
             guard !seen.contains(key) else { continue }
             seen.insert(key)
             unique.append(candidate)
         }
 
         return unique
+    }
+
+    nonisolated private static func normalized(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    nonisolated private static func nearbyCoordinateKey(_ coordinate: CLLocationCoordinate2D?) -> String? {
+        guard let coordinate else { return nil }
+        let latitude = (coordinate.latitude * 1_000).rounded() / 1_000
+        let longitude = (coordinate.longitude * 1_000).rounded() / 1_000
+        return "\(latitude),\(longitude)"
     }
 }
 
@@ -246,6 +262,52 @@ struct PassthroughRecommendationEnrichmentService: RecommendationEnrichmentServi
         case .mapKit: "Apple Maps"
         case .external: "External provider"
         }
+    }
+}
+
+struct CommunityAwareRecommendationEnrichmentService: RecommendationEnrichmentService {
+    private let community: any CommunityService
+    private let fallback: any RecommendationEnrichmentService
+
+    init(
+        community: any CommunityService,
+        fallback: any RecommendationEnrichmentService = PassthroughRecommendationEnrichmentService()
+    ) {
+        self.community = community
+        self.fallback = fallback
+    }
+
+    func enrich(_ candidates: [RecommendationCandidate]) async throws -> [EnrichedRecommendationCandidate] {
+        let base = try await fallback.enrich(candidates)
+        var enriched: [EnrichedRecommendationCandidate] = []
+        for item in base {
+            enriched.append(await addingCommunitySignals(to: item))
+        }
+        return enriched
+    }
+
+    private func addingCommunitySignals(to item: EnrichedRecommendationCandidate) async -> EnrichedRecommendationCandidate {
+        let rows = (try? await communityRows(for: item.candidate)) ?? []
+        guard !rows.isEmpty else { return item }
+        let average = rows.reduce(0) { $0 + $1.beanRating } / Double(rows.count)
+        var signals = item.publicSignals
+        signals.append("\(String(format: "%.1f", average))-bean community average")
+        signals.append("\(rows.count) community review\(rows.count == 1 ? "" : "s")")
+        var attributions = item.attributions
+        attributions.append(RecommendationAttribution(sourceName: "Road Beans Community", detail: "Community review average"))
+        return EnrichedRecommendationCandidate(
+            candidate: item.candidate,
+            publicSignals: signals,
+            attributions: attributions
+        )
+    }
+
+    private func communityRows(for candidate: RecommendationCandidate) async throws -> [CommunityVisitRow] {
+        if let mapKitIdentifier = candidate.mapKitIdentifier {
+            return try await community.fetchVisits(matchingMapKitIdentifier: mapKitIdentifier)
+        }
+        guard let coordinate = candidate.coordinate else { return [] }
+        return try await community.fetchVisits(near: coordinate, radiusMeters: 75, nameContains: candidate.name)
     }
 }
 

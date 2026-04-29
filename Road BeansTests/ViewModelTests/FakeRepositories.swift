@@ -5,6 +5,8 @@ import Foundation
 final class FakePlaceRepository: PlaceRepository, @unchecked Sendable {
     var stored: [PlaceSummary] = []
     var details: [UUID: PlaceDetail] = [:]
+    var createdReferences: [PlaceReference] = []
+    var createdID = UUID()
     var summariesNearCalls: [(coordinate: CLLocationCoordinate2D, radiusMeters: Double)] = []
     var updates: [UpdatePlaceCommand] = []
     var deletedIDs: [UUID] = []
@@ -12,7 +14,8 @@ final class FakePlaceRepository: PlaceRepository, @unchecked Sendable {
     var detailError: Error?
 
     func findOrCreate(reference: PlaceReference) async throws -> UUID {
-        UUID()
+        createdReferences.append(reference)
+        return createdID
     }
 
     func update(_ command: UpdatePlaceCommand) async throws {

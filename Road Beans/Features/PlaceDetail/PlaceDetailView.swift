@@ -5,10 +5,10 @@ struct PlaceDetailView: View {
     let placeID: UUID
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.visitRepository) private var visitRepository
-    @Environment(\.communityService) private var community
     @State private var viewModel: PlaceDetailViewModel?
     @State private var expandedVisits: Set<UUID> = []
     @State private var isEditing = false
+    @State private var selectedVisit: VisitRoute?
 
     var body: some View {
         Group {
@@ -67,7 +67,7 @@ struct PlaceDetailView: View {
 
     private func ensureLoaded() async {
         if viewModel == nil {
-            viewModel = PlaceDetailViewModel(placeRepo: placeRepository, visitRepo: visitRepository, community: community)
+            viewModel = PlaceDetailViewModel(placeRepo: placeRepository, visitRepo: visitRepository)
         }
         await viewModel?.load(id: placeID)
     }
@@ -109,13 +109,11 @@ struct PlaceDetailView: View {
             }
 
             visitsList(detail)
-
-            communityVisitsList()
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(Color.surface(.canvas).ignoresSafeArea())
-        .navigationDestination(for: VisitRoute.self) { route in
+        .navigationDestination(item: $selectedVisit) { route in
             VisitDetailView(visitID: route.id)
         }
     }
@@ -187,21 +185,6 @@ struct PlaceDetailView: View {
         }
     }
 
-    @ViewBuilder
-    private func communityVisitsList() -> some View {
-        if let rows = viewModel?.communityRows, !rows.isEmpty {
-            Section("Community Visits") {
-                ForEach(rows) { row in
-                    NavigationLink {
-                        CommunityVisitDetailView(recordName: row.id)
-                    } label: {
-                        CommunityVisitRowView(row: row, isFavorite: false)
-                    }
-                }
-            }
-        }
-    }
-
     private func visitCard(_ visit: VisitRow) -> some View {
         RoadBeansCard {
             VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
@@ -236,9 +219,12 @@ struct PlaceDetailView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    NavigationLink(value: VisitRoute(id: visit.id)) {
+                    Button {
+                        selectedVisit = VisitRoute(id: visit.id)
+                    } label: {
                         Label("View visit", systemImage: "arrow.right")
                     }
+                    .buttonStyle(.bordered)
                 }
                 .roadBeansStyle(.bodyS)
                 .foregroundStyle(.ink(.secondary))
@@ -278,6 +264,6 @@ struct PlaceDetailView: View {
     }
 }
 
-private struct VisitRoute: Hashable {
+private struct VisitRoute: Hashable, Identifiable {
     let id: UUID
 }

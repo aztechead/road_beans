@@ -23,6 +23,10 @@ actor CloudKitCommunityService: CommunityService {
 
     func join(displayName: String, profile: TasteProfile, existingVisits: [CommunityVisitDraft]) async throws {
         logger.info("Community join started")
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !CommunityContentFilter.containsBlockedContent(trimmedName) else {
+            throw CommunityServiceError.invalidInput
+        }
         let userID = try await currentUserRecordID()
         logger.info("Community join fetched user record ID: \(userID.recordName, privacy: .private)")
         if try await fetchMember(userRecordID: userID.recordName) != nil {
@@ -33,7 +37,7 @@ actor CloudKitCommunityService: CommunityService {
         let now = Date.now
         let record = CKRecord(recordType: CommunityRecordType.member, recordID: memberRecordID(for: userID.recordName))
         record["userRecordID"] = userID.recordName as NSString
-        record["displayName"] = displayName.trimmingCharacters(in: .whitespacesAndNewlines) as NSString
+        record["displayName"] = trimmedName as NSString
         record["tasteProfile"] = try encoder.encode(profile) as NSData
         record["joinedAt"] = now as NSDate
         record["lastUpdatedAt"] = now as NSDate
@@ -59,9 +63,13 @@ actor CloudKitCommunityService: CommunityService {
     }
 
     func updateProfile(displayName: String, profile: TasteProfile) async throws {
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !CommunityContentFilter.containsBlockedContent(trimmedName) else {
+            throw CommunityServiceError.invalidInput
+        }
         let userID = try await currentUserRecordID()
         let record = try await fetch(recordID: memberRecordID(for: userID.recordName))
-        record["displayName"] = displayName.trimmingCharacters(in: .whitespacesAndNewlines) as NSString
+        record["displayName"] = trimmedName as NSString
         record["tasteProfile"] = try encoder.encode(profile) as NSData
         record["lastUpdatedAt"] = Date.now as NSDate
         _ = try await save(record)
@@ -69,6 +77,13 @@ actor CloudKitCommunityService: CommunityService {
     }
 
     func publish(_ visit: CommunityVisitDraft) async throws -> String {
+        guard !CommunityContentFilter.containsBlockedContent([
+            visit.placeName,
+            visit.drinkSummary,
+            visit.tagSummary
+        ]) else {
+            throw CommunityServiceError.invalidInput
+        }
         let userID = try await currentUserRecordID()
         guard let member = try await fetchMember(userRecordID: userID.recordName) else {
             throw CommunityServiceError.notAMember
@@ -110,11 +125,21 @@ actor CloudKitCommunityService: CommunityService {
             recordType: CommunityRecordType.like,
             predicate: NSPredicate(format: "communityVisitRecordName == %@", recordName)
         )
-        try await deleteRecordsMatching(
-            recordType: CommunityRecordType.comment,
-            predicate: NSPredicate(format: "communityVisitRecordName == %@", recordName)
-        )
         _ = try await delete(recordID: recordID)
+    }
+
+    func reportVisit(_ report: CommunityReportDraft) async throws {
+        let userID = try await currentUserRecordID()
+        let trimmedReason = report.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedReason.isEmpty else { throw CommunityServiceError.invalidInput }
+
+        let record = CKRecord(recordType: CommunityRecordType.report)
+        record["communityVisitRecordName"] = report.visitRecordName as NSString
+        record["reportedAuthorUserRecordID"] = report.reportedAuthorUserRecordID as NSString
+        record["reporterUserRecordID"] = userID.recordName as NSString
+        record["reason"] = trimmedReason as NSString
+        record["createdAt"] = Date.now as NSDate
+        _ = try await save(record)
     }
 
     func fetchFeedPage(
@@ -197,12 +222,9 @@ actor CloudKitCommunityService: CommunityService {
         do {
             let record = try await fetch(recordID: CKRecord.ID(recordName: recordName))
             guard var row = try await row(from: record, likeCount: 0, commentCount: 0) else { return nil }
-            let commentRows = try await comments(forVisitRecordName: recordName)
-            row.commentCount = commentRows.count
             row.likeCount = try await likeCount(for: recordName)
             return CommunityVisitDetail(
                 row: row,
-                comments: commentRows,
                 likedByCurrentUser: try await isLikedByCurrentUser(recordName)
             )
         } catch let error as CKError where error.code == .unknownItem {
@@ -247,42 +269,6 @@ actor CloudKitCommunityService: CommunityService {
         let recordID = CKRecord.ID(recordName: "like-\(visitRecordName)-\(userID.recordName)")
         do {
             _ = try await delete(recordID: recordID)
-        } catch let error as CKError where error.code == .unknownItem {}
-    }
-
-    func comments(forVisitRecordName recordName: String) async throws -> [CommunityCommentRow] {
-        let predicate = NSPredicate(format: "communityVisitRecordName == %@", recordName)
-        let query = CKQuery(recordType: CommunityRecordType.comment, predicate: predicate)
-        query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: true)]
-        return try await queryAll(query).compactMap(comment(from:))
-    }
-
-    func addComment(toVisitRecordName recordName: String, text: String) async throws -> CommunityCommentRow {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw CommunityServiceError.invalidInput }
-
-        let userID = try await currentUserRecordID()
-        let displayName = try await currentMemberDisplayName()
-        let record = CKRecord(recordType: CommunityRecordType.comment)
-        let timestamp = Date.now
-        record["communityVisitRecordName"] = recordName as NSString
-        record["userRecordID"] = userID.recordName as NSString
-        record["userDisplayName"] = displayName as NSString
-        record["text"] = trimmed as NSString
-        record["timestamp"] = timestamp as NSDate
-        let saved = try await save(record)
-        return CommunityCommentRow(
-            id: saved.recordID.recordName,
-            authorUserRecordID: userID.recordName,
-            authorDisplayName: displayName,
-            text: trimmed,
-            timestamp: saved["timestamp"] as? Date ?? timestamp
-        )
-    }
-
-    func deleteComment(recordName: String) async throws {
-        do {
-            _ = try await delete(recordID: CKRecord.ID(recordName: recordName))
         } catch let error as CKError where error.code == .unknownItem {}
     }
 
@@ -405,13 +391,12 @@ actor CloudKitCommunityService: CommunityService {
     private func rows(from records: [CKRecord]) async throws -> [CommunityVisitRow] {
         let recordNames = Set(records.map(\.recordID.recordName))
         let likeCounts = await bestEffortLikeCounts(for: recordNames)
-        let commentCounts = await bestEffortCommentCounts(for: recordNames)
         var rows: [CommunityVisitRow] = []
         for record in records {
             if let row = try await row(
                 from: record,
                 likeCount: likeCounts[record.recordID.recordName, default: 0],
-                commentCount: commentCounts[record.recordID.recordName, default: 0]
+                commentCount: 0
             ) {
                 rows.append(row)
             }
@@ -493,23 +478,6 @@ actor CloudKitCommunityService: CommunityService {
         )
     }
 
-    private func comment(from record: CKRecord) -> CommunityCommentRow? {
-        guard
-            let authorUserRecordID = record["userRecordID"] as? String,
-            let authorDisplayName = record["userDisplayName"] as? String,
-            let text = record["text"] as? String,
-            let timestamp = record["timestamp"] as? Date
-        else { return nil }
-
-        return CommunityCommentRow(
-            id: record.recordID.recordName,
-            authorUserRecordID: authorUserRecordID,
-            authorDisplayName: authorDisplayName,
-            text: text,
-            timestamp: timestamp
-        )
-    }
-
     private func apply(_ visit: CommunityVisitDraft, to record: CKRecord, author: CommunityMemberSnapshot) {
         let now = Date.now
         record["localVisitID"] = visit.localVisitID.uuidString as NSString
@@ -542,12 +510,6 @@ actor CloudKitCommunityService: CommunityService {
         return try await queryAll(query).count
     }
 
-    private func commentCount(for recordName: String) async throws -> Int {
-        let predicate = NSPredicate(format: "communityVisitRecordName == %@", recordName)
-        let query = CKQuery(recordType: CommunityRecordType.comment, predicate: predicate)
-        return try await queryAll(query).count
-    }
-
     private func socialCounts(recordType: String, recordNames: Set<String>) async throws -> [String: Int] {
         guard !recordNames.isEmpty else { return [:] }
         let predicate = NSPredicate(format: "communityVisitRecordName IN %@", Array(recordNames))
@@ -572,33 +534,11 @@ actor CloudKitCommunityService: CommunityService {
         }
     }
 
-    private func bestEffortCommentCounts(for recordNames: Set<String>) async -> [String: Int] {
-        do {
-            return try await socialCounts(recordType: CommunityRecordType.comment, recordNames: recordNames)
-        } catch {
-            logger.error("Community comment count batch failed: \(String(describing: error), privacy: .public)")
-            var counts: [String: Int] = [:]
-            for recordName in recordNames {
-                counts[recordName] = await bestEffortCommentCount(for: recordName)
-            }
-            return counts
-        }
-    }
-
     private func bestEffortLikeCount(for recordName: String) async -> Int {
         do {
             return try await likeCount(for: recordName)
         } catch {
             logger.error("Community like count failed for \(recordName, privacy: .public): \(String(describing: error), privacy: .public)")
-            return 0
-        }
-    }
-
-    private func bestEffortCommentCount(for recordName: String) async -> Int {
-        do {
-            return try await commentCount(for: recordName)
-        } catch {
-            logger.error("Community comment count failed for \(recordName, privacy: .public): \(String(describing: error), privacy: .public)")
             return 0
         }
     }
@@ -662,10 +602,6 @@ actor CloudKitCommunityService: CommunityService {
     private func deleteCurrentUserSocialRecords(userRecordID: String) async throws {
         try await deleteRecordsMatching(
             recordType: CommunityRecordType.like,
-            predicate: NSPredicate(format: "userRecordID == %@", userRecordID)
-        )
-        try await deleteRecordsMatching(
-            recordType: CommunityRecordType.comment,
             predicate: NSPredicate(format: "userRecordID == %@", userRecordID)
         )
     }
