@@ -9,6 +9,7 @@ actor CloudKitCommunityService: CommunityService {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private let logger = Logger(subsystem: "brainmeld.Road-Beans", category: "CloudKitCommunityService")
+    private var memberSnapshotCache: [String: CommunityMemberSnapshot] = [:]
 
     init(container: CKContainer = .default()) {
         self.container = container
@@ -54,6 +55,7 @@ actor CloudKitCommunityService: CommunityService {
         do {
             _ = try await delete(recordID: memberRecordID(for: userID.recordName))
         } catch let error as CKError where error.code == .unknownItem {}
+        memberSnapshotCache[userID.recordName] = nil
     }
 
     func updateProfile(displayName: String, profile: TasteProfile) async throws {
@@ -63,6 +65,7 @@ actor CloudKitCommunityService: CommunityService {
         record["tasteProfile"] = try encoder.encode(profile) as NSData
         record["lastUpdatedAt"] = Date.now as NSDate
         _ = try await save(record)
+        memberSnapshotCache[userID.recordName] = nil
     }
 
     func publish(_ visit: CommunityVisitDraft) async throws -> String {
@@ -175,9 +178,16 @@ actor CloudKitCommunityService: CommunityService {
     }
 
     func fetchMember(userRecordID: String) async throws -> CommunityMemberSnapshot? {
+        if let cached = memberSnapshotCache[userRecordID] {
+            return cached
+        }
         do {
             let record = try await fetch(recordID: memberRecordID(for: userRecordID))
-            return try member(from: record)
+            let snapshot = try member(from: record)
+            if let snapshot {
+                memberSnapshotCache[userRecordID] = snapshot
+            }
+            return snapshot
         } catch let error as CKError where error.code == .unknownItem {
             return nil
         }
@@ -186,7 +196,7 @@ actor CloudKitCommunityService: CommunityService {
     func fetchVisitDetail(recordName: String) async throws -> CommunityVisitDetail? {
         do {
             let record = try await fetch(recordID: CKRecord.ID(recordName: recordName))
-            guard var row = try await row(from: record) else { return nil }
+            guard var row = try await row(from: record, likeCount: 0, commentCount: 0) else { return nil }
             let commentRows = try await comments(forVisitRecordName: recordName)
             row.commentCount = commentRows.count
             row.likeCount = try await likeCount(for: recordName)
@@ -393,9 +403,16 @@ actor CloudKitCommunityService: CommunityService {
     }
 
     private func rows(from records: [CKRecord]) async throws -> [CommunityVisitRow] {
+        let recordNames = Set(records.map(\.recordID.recordName))
+        let likeCounts = await bestEffortLikeCounts(for: recordNames)
+        let commentCounts = await bestEffortCommentCounts(for: recordNames)
         var rows: [CommunityVisitRow] = []
         for record in records {
-            if let row = try await row(from: record) {
+            if let row = try await row(
+                from: record,
+                likeCount: likeCounts[record.recordID.recordName, default: 0],
+                commentCount: commentCounts[record.recordID.recordName, default: 0]
+            ) {
                 rows.append(row)
             }
         }
@@ -426,7 +443,7 @@ actor CloudKitCommunityService: CommunityService {
         return CommunityFeedPage(rows: try await rows(from: Array(filtered)), nextCursor: nil)
     }
 
-    private func row(from record: CKRecord) async throws -> CommunityVisitRow? {
+    private func row(from record: CKRecord, likeCount: Int, commentCount: Int) async throws -> CommunityVisitRow? {
         guard
             let authorUserRecordID = record["authorUserRecordID"] as? String,
             let authorDisplayName = record["authorDisplayName"] as? String,
@@ -455,8 +472,8 @@ actor CloudKitCommunityService: CommunityService {
             drinkSummary: drinkSummary,
             tagSummary: tagSummary,
             publishedAt: publishedAt,
-            likeCount: await bestEffortLikeCount(for: record.recordID.recordName),
-            commentCount: await bestEffortCommentCount(for: record.recordID.recordName)
+            likeCount: likeCount,
+            commentCount: commentCount
         )
     }
 
@@ -531,6 +548,43 @@ actor CloudKitCommunityService: CommunityService {
         return try await queryAll(query).count
     }
 
+    private func socialCounts(recordType: String, recordNames: Set<String>) async throws -> [String: Int] {
+        guard !recordNames.isEmpty else { return [:] }
+        let predicate = NSPredicate(format: "communityVisitRecordName IN %@", Array(recordNames))
+        let query = CKQuery(recordType: recordType, predicate: predicate)
+        let records = try await queryAll(query)
+        return records.reduce(into: [:]) { counts, record in
+            guard let recordName = record["communityVisitRecordName"] as? String else { return }
+            counts[recordName, default: 0] += 1
+        }
+    }
+
+    private func bestEffortLikeCounts(for recordNames: Set<String>) async -> [String: Int] {
+        do {
+            return try await socialCounts(recordType: CommunityRecordType.like, recordNames: recordNames)
+        } catch {
+            logger.error("Community like count batch failed: \(String(describing: error), privacy: .public)")
+            var counts: [String: Int] = [:]
+            for recordName in recordNames {
+                counts[recordName] = await bestEffortLikeCount(for: recordName)
+            }
+            return counts
+        }
+    }
+
+    private func bestEffortCommentCounts(for recordNames: Set<String>) async -> [String: Int] {
+        do {
+            return try await socialCounts(recordType: CommunityRecordType.comment, recordNames: recordNames)
+        } catch {
+            logger.error("Community comment count batch failed: \(String(describing: error), privacy: .public)")
+            var counts: [String: Int] = [:]
+            for recordName in recordNames {
+                counts[recordName] = await bestEffortCommentCount(for: recordName)
+            }
+            return counts
+        }
+    }
+
     private func bestEffortLikeCount(for recordName: String) async -> Int {
         do {
             return try await likeCount(for: recordName)
@@ -549,7 +603,7 @@ actor CloudKitCommunityService: CommunityService {
         }
     }
 
-    static func doubleValue(_ value: Any?) -> Double? {
+    nonisolated static func doubleValue(_ value: Any?) -> Double? {
         if let number = value as? NSNumber {
             return number.doubleValue
         }
@@ -565,6 +619,34 @@ actor CloudKitCommunityService: CommunityService {
         } catch let error as CKError where error.code == .unknownItem {
             return false
         }
+    }
+
+    func likedVisitIDsByCurrentUser(in recordNames: Set<String>) async throws -> Set<String> {
+        guard !recordNames.isEmpty else { return [] }
+        let userID = try await currentUserRecordID()
+        let predicate = NSPredicate(
+            format: "userRecordID == %@ AND communityVisitRecordName IN %@",
+            userID.recordName,
+            Array(recordNames)
+        )
+        let query = CKQuery(recordType: CommunityRecordType.like, predicate: predicate)
+        do {
+            let records = try await queryAll(query)
+            return Set(records.compactMap { $0["communityVisitRecordName"] as? String })
+        } catch {
+            logger.error("Community liked batch query failed: \(String(describing: error), privacy: .public)")
+            return try await sequentialLikedVisitIDsByCurrentUser(in: recordNames)
+        }
+    }
+
+    private func sequentialLikedVisitIDsByCurrentUser(in recordNames: Set<String>) async throws -> Set<String> {
+        var liked: Set<String> = []
+        for recordName in recordNames {
+            if try await isLikedByCurrentUser(recordName) {
+                liked.insert(recordName)
+            }
+        }
+        return liked
     }
 
     private func deleteAuthoredVisits(authorUserRecordID: String) async throws {

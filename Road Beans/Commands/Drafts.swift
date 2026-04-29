@@ -9,5 +9,6 @@ struct DrinkDraft: Hashable, Sendable {
 
 struct PhotoDraft: Hashable, Sendable {
     let rawImageData: Data
+    var previewImageData: Data?
     var caption: String?
 }

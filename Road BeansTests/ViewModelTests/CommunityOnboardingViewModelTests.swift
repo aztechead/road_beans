@@ -54,6 +54,7 @@ private struct FailingJoinCommunityService: CommunityService {
     func like(visitRecordName: String) async throws {}
     func unlike(visitRecordName: String) async throws {}
     func isLikedByCurrentUser(_ recordName: String) async throws -> Bool { false }
+    func likedVisitIDsByCurrentUser(in recordNames: Set<String>) async throws -> Set<String> { [] }
     func comments(forVisitRecordName recordName: String) async throws -> [CommunityCommentRow] { [] }
 
     func addComment(toVisitRecordName recordName: String, text: String) async throws -> CommunityCommentRow {

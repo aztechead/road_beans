@@ -34,15 +34,18 @@ enum PlaceRatingFilter: String, CaseIterable, Identifiable, Sendable {
 @MainActor
 final class PlaceListViewModel {
     var mode: PlaceListMode = .byPlace
-    var searchText = ""
-    var selectedKind: PlaceKind?
-    var ratingFilter: PlaceRatingFilter = .any
-    var selectedTags: [String] = []
-    var isDateFilterEnabled = false
-    var startDate = Calendar.current.date(byAdding: .month, value: -1, to: .now) ?? .now
-    var endDate = Date.now
-    var places: [PlaceSummary] = []
-    var recentVisits: [RecentVisitRow] = []
+    var searchText = "" { didSet { updateDerivedData() } }
+    var selectedKind: PlaceKind? { didSet { updateDerivedData() } }
+    var ratingFilter: PlaceRatingFilter = .any { didSet { updateDerivedData() } }
+    var selectedTags: [String] = [] { didSet { updateDerivedData() } }
+    var isDateFilterEnabled = false { didSet { updateDerivedData() } }
+    var startDate = Calendar.current.date(byAdding: .month, value: -1, to: .now) ?? .now { didSet { updateDerivedData() } }
+    var endDate = Date.now { didSet { updateDerivedData() } }
+    var places: [PlaceSummary] = [] { didSet { updateDerivedData() } }
+    var recentVisits: [RecentVisitRow] = [] { didSet { updateDerivedData() } }
+    private(set) var filteredPlaces: [PlaceSummary] = []
+    private(set) var filteredVisits: [RecentVisitRow] = []
+    private(set) var availableTags: [String] = []
     var state: ScreenState = .idle
 
     private let placeRepository: any PlaceRepository
@@ -54,7 +57,10 @@ final class PlaceListViewModel {
     }
 
     func reload() async {
-        state = .loading
+        let shouldShowFullScreenLoading = places.isEmpty && recentVisits.isEmpty
+        if shouldShowFullScreenLoading {
+            state = .loading
+        }
         do {
             async let loadedPlaces = placeRepository.summaries()
             async let loadedVisits = visitRepository.recentRows(limit: 200)
@@ -68,28 +74,24 @@ final class PlaceListViewModel {
         }
     }
 
-    var filteredPlaces: [PlaceSummary] {
-        places.filter { place in
+    private func updateDerivedData() {
+        filteredPlaces = places.filter { place in
             matchesSearch(place)
                 && matchesKind(place.kind)
                 && matchesRating(place.averageRating)
                 && matchesPlaceVisitFilters(place)
         }
-    }
 
-    var filteredVisits: [RecentVisitRow] {
-        recentVisits.filter { row in
+        filteredVisits = recentVisits.filter { row in
             matchesSearch(row)
                 && matchesKind(row.placeKind)
                 && matchesRating(row.visit.averageRating)
                 && matchesTags(row.visit.tagNames)
                 && matchesDate(row.visit.date)
         }
-    }
 
-    var availableTags: [String] {
         let tags = recentVisits.flatMap(\.visit.tagNames)
-        return Array(Set(tags)).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        availableTags = Array(Set(tags)).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
     var activeFilterCount: Int {

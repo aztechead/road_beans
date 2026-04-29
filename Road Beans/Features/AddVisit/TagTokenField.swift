@@ -14,6 +14,7 @@ struct TagTokenField: View {
 
     @State private var input = ""
     @State private var currentSuggestions: [TagSuggestion] = []
+    @State private var suggestionTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
@@ -45,6 +46,9 @@ struct TagTokenField: View {
         .task {
             await refreshSuggestions(for: input)
         }
+        .onDisappear {
+            suggestionTask?.cancel()
+        }
     }
 
     private var tagChips: some View {
@@ -56,7 +60,7 @@ struct TagTokenField: View {
                         state: .removable,
                         onRemove: {
                             tags.removeAll { $0 == tag }
-                            Task { await refreshSuggestions(for: input) }
+                            scheduleSuggestionRefresh(for: input)
                         }
                     )
                 }
@@ -72,7 +76,7 @@ struct TagTokenField: View {
                     RoadBeansChip(title: suggestion.name, systemImage: "plus", action: {
                         TagTokenLogic.add(suggestion.name, to: &tags)
                         input = ""
-                        Task { await refreshSuggestions(for: "") }
+                        scheduleSuggestionRefresh(for: "")
                     })
                 }
             }
@@ -82,7 +86,7 @@ struct TagTokenField: View {
     private func addInput() {
         TagTokenLogic.add(input, to: &tags)
         input = ""
-        Task { await refreshSuggestions(for: "") }
+        scheduleSuggestionRefresh(for: "")
     }
 
     private func handleInputChange(_ value: String) {
@@ -91,18 +95,27 @@ struct TagTokenField: View {
                 TagTokenLogic.add(String(part), to: &tags)
             }
             input = ""
-            Task { await refreshSuggestions(for: "") }
+            scheduleSuggestionRefresh(for: "")
             return
         }
 
-        Task {
-            await refreshSuggestions(for: value)
-        }
+        scheduleSuggestionRefresh(for: value, delayNanoseconds: 180_000_000)
     }
 
     private func refreshSuggestions(for value: String) async {
         let normalizedTags = Set(tags.map(LocalTagRepository.normalize(_:)))
         currentSuggestions = await suggestions(value)
             .filter { !normalizedTags.contains(LocalTagRepository.normalize($0.name)) }
+    }
+
+    private func scheduleSuggestionRefresh(for value: String, delayNanoseconds: UInt64 = 0) {
+        suggestionTask?.cancel()
+        suggestionTask = Task {
+            if delayNanoseconds > 0 {
+                try? await Task.sleep(nanoseconds: delayNanoseconds)
+            }
+            guard !Task.isCancelled else { return }
+            await refreshSuggestions(for: value)
+        }
     }
 }

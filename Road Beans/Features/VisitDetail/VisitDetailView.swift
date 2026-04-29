@@ -140,15 +140,7 @@ struct VisitDetailView: View {
         if !photos.isEmpty {
             TabView {
                 ForEach(photos) { photo in
-                    if let image = UIImage(data: photo.thumbnailData) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        Image(systemName: "photo")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                    }
+                    VisitPhotoPage(data: photo.thumbnailData)
                 }
             }
             .tabViewStyle(.page)
@@ -192,6 +184,28 @@ struct VisitDetailView: View {
                 .padding(.vertical, 6)
             }
             }
+        }
+    }
+}
+
+private struct VisitPhotoPage: View {
+    let data: Data
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(systemName: "photo")
+                    .font(.largeTitle)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .task(id: data) {
+            image = UIImage(data: data)
         }
     }
 }

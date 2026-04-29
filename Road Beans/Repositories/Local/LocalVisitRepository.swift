@@ -255,7 +255,12 @@ final class LocalVisitRepository: VisitRepository {
     }
 
     private static func averageRating(for drinks: [Drink]) -> Double? {
-        guard !drinks.isEmpty else { return nil }
-        return drinks.map(\.rating).reduce(0, +) / Double(drinks.count)
+        var total = 0.0
+        var count = 0
+        for drink in drinks {
+            total += drink.rating
+            count += 1
+        }
+        return count == 0 ? nil : total / Double(count)
     }
 }
