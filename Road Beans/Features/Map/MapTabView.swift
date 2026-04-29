@@ -162,7 +162,7 @@ struct MapTabView: View {
                                 Button {
                                     selectedMapItem = .community(annotation)
                                 } label: {
-                                    CommunityMapMarkerView(kind: annotation.kind)
+                                    CommunityMapMarkerView(kind: annotation.kind, rating: annotation.averageRating)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -441,42 +441,53 @@ private struct MapMarkerView: View {
 
 private struct CommunityMapMarkerView: View {
     let kind: PlaceKind
+    let rating: Double
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            ZStack {
-                Circle()
-                    .fill(Color.surface(.raised))
-                    .frame(width: 38, height: 38)
-                    .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
-                    .overlay {
-                        Circle()
-                            .stroke(kind.accentColor.opacity(0.38), lineWidth: 1.5)
-                    }
+        VStack(spacing: RoadBeansSpacing.xs) {
+            ZStack(alignment: .topTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(Color.surface(.raised))
+                        .frame(width: 38, height: 38)
+                        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                        .overlay {
+                            Circle()
+                                .stroke(kind.accentColor.opacity(0.38), lineWidth: 1.5)
+                        }
 
-                PlaceKindIcon(kind: kind)
-                    .stroke(
-                        kind.accentColor,
-                        style: StrokeStyle(lineWidth: 1.7, lineCap: .round, lineJoin: .round)
-                    )
-                    .frame(width: 19, height: 19)
+                    PlaceKindIcon(kind: kind)
+                        .stroke(
+                            kind.accentColor,
+                            style: StrokeStyle(lineWidth: 1.7, lineCap: .round, lineJoin: .round)
+                        )
+                        .frame(width: 19, height: 19)
+                }
+
+                ZStack {
+                    Circle()
+                        .fill(Color.surface(.canvas))
+                        .overlay {
+                            Circle().stroke(Color.divider(.hairline), lineWidth: 1)
+                        }
+                        .frame(width: 16, height: 16)
+
+                    Image(systemName: "globe")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundStyle(Color.ink(.secondary))
+                }
+                .offset(x: 4, y: -4)
             }
 
-            ZStack {
-                Circle()
-                    .fill(Color.surface(.canvas))
-                    .overlay {
-                        Circle().stroke(Color.divider(.hairline), lineWidth: 1)
-                    }
-                    .frame(width: 16, height: 16)
-
-                Image(systemName: "globe")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(Color.ink(.secondary))
-            }
-            .offset(x: 4, y: -4)
+            Text(String(format: "%.1f", rating))
+                .roadBeansStyle(.labelM)
+                .padding(.horizontal, RoadBeansSpacing.sm)
+                .padding(.vertical, RoadBeansSpacing.xs)
+                .surface(.raised, radius: RoadBeansRadius.md)
+                .foregroundStyle(.ink(.primary))
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(kind.displayName) community stop")
+        .accessibilityValue(BeanRatingView.accessibilityValue(rating))
     }
 }
