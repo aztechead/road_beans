@@ -51,6 +51,10 @@ struct ContentView: View {
         .environment(\.locationPermissionService, FakeLocationPermissionService(initial: .denied))
         .environment(\.currentLocationProvider, FakeCurrentLocationProvider(coordinate: nil))
         .environment(\.photoProcessingService, photoProcessing)
+        .environment(\.recommendationProfileService, LocalRecommendationProfileService())
+        .environment(\.nearbyRecommendationCandidateService, AppleNativeRecommendationCandidateService(placeRepository: places))
+        .environment(\.recommendationEnrichmentService, PassthroughRecommendationEnrichmentService())
+        .environment(\.recommendationRankingService, HeuristicRecommendationRankingService())
         .environment(\.iCloudAvailability, icloud)
         .environment(\.remoteSyncCoordinator, sync)
 }

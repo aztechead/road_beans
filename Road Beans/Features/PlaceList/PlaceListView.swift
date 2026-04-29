@@ -5,10 +5,19 @@ struct PlaceListView: View {
 
     @Environment(\.placeRepository) private var placeRepository
     @Environment(\.visitRepository) private var visitRepository
+    @Environment(\.locationPermissionService) private var locationPermissionService
+    @Environment(\.currentLocationProvider) private var currentLocationProvider
+    @Environment(\.recommendationProfileService) private var recommendationProfileService
+    @Environment(\.nearbyRecommendationCandidateService) private var nearbyRecommendationCandidateService
+    @Environment(\.recommendationEnrichmentService) private var recommendationEnrichmentService
+    @Environment(\.recommendationRankingService) private var recommendationRankingService
     @State private var viewModel: PlaceListViewModel?
+    @State private var recommendationViewModel: RecommendationDeckViewModel?
+    @State private var navigationPath: [UUID] = []
+    @State private var showingAppleIntelligenceInfo = false
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             Group {
                 if let viewModel {
                     content(viewModel)
@@ -18,6 +27,14 @@ struct PlaceListView: View {
             }
             .navigationTitle("Stops")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingAppleIntelligenceInfo = true
+                    } label: {
+                        Label("How AI is used", systemImage: "sparkles")
+                    }
+                    .accessibilityLabel("How Apple Intelligence is used")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         onAddVisit()
@@ -26,22 +43,49 @@ struct PlaceListView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingAppleIntelligenceInfo) {
+                AppleIntelligenceInfoView(onReset: {
+                    if let recommendationViewModel {
+                        await recommendationViewModel.reset()
+                    }
+                })
+            }
         }
         .background(Color.surface(.canvas).ignoresSafeArea())
         .task {
             guard viewModel == nil else { return }
             let model = PlaceListViewModel(places: placeRepository, visits: visitRepository)
+            let recommendations = RecommendationDeckViewModel(
+                visits: visitRepository,
+                locationPermission: locationPermissionService,
+                currentLocation: currentLocationProvider,
+                profileService: recommendationProfileService,
+                candidateService: nearbyRecommendationCandidateService,
+                enrichmentService: recommendationEnrichmentService,
+                rankingService: recommendationRankingService
+            )
             viewModel = model
+            recommendationViewModel = recommendations
             await model.reload()
+            await recommendations.reload()
         }
         .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitSaved)) { _ in
-            Task { await viewModel?.reload() }
+            Task {
+                await viewModel?.reload()
+                await recommendationViewModel?.reload()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .roadBeansVisitDeleted)) { _ in
-            Task { await viewModel?.reload() }
+            Task {
+                await viewModel?.reload()
+                await recommendationViewModel?.reload()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .roadBeansPlaceUpdated)) { _ in
-            Task { await viewModel?.reload() }
+            Task {
+                await viewModel?.reload()
+                await recommendationViewModel?.reload()
+            }
         }
     }
 
@@ -94,14 +138,24 @@ struct PlaceListView: View {
                         )
                     } else {
                         List {
+                            if viewModel.mode == .byPlace, let recommendationViewModel {
+                                RecommendationDeckView(viewModel: recommendationViewModel)
+                                    .listRowSeparator(.hidden)
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 6, trailing: 16))
+                            }
+
                             switch viewModel.mode {
                             case .byPlace:
                                 ForEach(viewModel.filteredPlaces) { place in
-                                    NavigationLink(value: place.id) {
+                                    Button {
+                                        navigationPath.append(place.id)
+                                    } label: {
                                         RoadBeansCard(tint: place.kind.accentColor) {
                                             placeRow(place)
                                         }
                                     }
+                                    .buttonStyle(.plain)
                                     .listRowSeparator(.hidden)
                                     .listRowBackground(Color.clear)
                                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
@@ -280,8 +334,13 @@ struct PlaceListView: View {
                 BeanRatingView(value: .constant(averageRating), size: 16, editable: false)
                     .layoutPriority(1)
             }
+
+            Image(systemName: "chevron.forward")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 6)
+        .contentShape(Rectangle())
     }
 
     private func visitRow(_ row: RecentVisitRow) -> some View {
