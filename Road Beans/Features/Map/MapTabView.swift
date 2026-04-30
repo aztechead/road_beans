@@ -500,7 +500,7 @@ private struct MapLayerControlPanel: View {
             HStack(spacing: RoadBeansSpacing.sm) {
                 MapLayerButton(
                     title: "Near me",
-                    subtitle: "\(personalCount) stop\(personalCount == 1 ? "" : "s")",
+                    detail: nearMeOn ? "\(personalCount) stop\(personalCount == 1 ? "" : "s")" : nil,
                     systemImage: "location.fill",
                     isSelected: nearMeOn,
                     isLoading: false,
@@ -510,7 +510,9 @@ private struct MapLayerControlPanel: View {
                 if isCommunityMember {
                     MapLayerButton(
                         title: "Community",
-                        subtitle: "\(communityCount) review\(communityCount == 1 ? "" : "s")",
+                        detail: communityReviewsOn || isLoadingCommunity
+                            ? "\(communityCount) review\(communityCount == 1 ? "" : "s")"
+                            : nil,
                         systemImage: "person.2.fill",
                         isSelected: communityReviewsOn,
                         isLoading: isLoadingCommunity,
@@ -539,7 +541,7 @@ private struct MapLayerControlPanel: View {
 
 private struct MapLayerButton: View {
     let title: String
-    let subtitle: String
+    let detail: String?
     let systemImage: String
     let isSelected: Bool
     let isLoading: Bool
@@ -568,9 +570,11 @@ private struct MapLayerButton: View {
                         .roadBeansStyle(.labelM)
                         .foregroundStyle(.ink(.primary))
 
-                    Text(subtitle)
-                        .roadBeansStyle(.caption)
-                        .foregroundStyle(.ink(.secondary))
+                    if let detail {
+                        Text(detail)
+                            .roadBeansStyle(.caption)
+                            .foregroundStyle(.ink(.secondary))
+                    }
                 }
 
                 Spacer(minLength: 0)
