@@ -45,9 +45,11 @@ final class CommunityFeedViewModel {
     var filter: CommunityFeedFilter = .all
     var sort: CommunityFeedSort = .newest
     var isRefreshing = false
+    var isLoadingNextPage = false
     var likedVisitIDs: Set<String> = []
     var blockedAuthorIDs = CommunityModerationStore.blockedAuthorIDs
     var moderationMessage: String?
+    var reviewContextSummaries: [String: String] = [:]
 
     private struct CachedFeed {
         var favorites: [CommunityVisitRow]
@@ -57,22 +59,27 @@ final class CommunityFeedViewModel {
 
     private var cache: [CommunityFeedFilter: CachedFeed] = [:]
     private var hasHydrated = false
+    private var contextSynthesisRequestedIDs: Set<String> = []
+    private let pageSize = 10
     private let service: any CommunityService
     private let memberCache: CommunityMemberCache?
     private let favorites: any FavoriteMemberRepository
     private let diskCache: CommunityFeedDiskCache
+    private let contextSummaryProvider: CommunityReviewContextSummaryProvider
     private let logger = Logger(subsystem: "brainmeld.Road-Beans", category: "CommunityFeed")
 
     init(
         service: any CommunityService,
         favorites: any FavoriteMemberRepository,
         memberCache: CommunityMemberCache? = nil,
-        diskCache: CommunityFeedDiskCache = CommunityFeedDiskCache()
+        diskCache: CommunityFeedDiskCache = CommunityFeedDiskCache(),
+        contextSummaryProvider: CommunityReviewContextSummaryProvider = CommunityReviewContextSummaryProvider()
     ) {
         self.service = service
         self.favorites = favorites
         self.memberCache = memberCache
         self.diskCache = diskCache
+        self.contextSummaryProvider = contextSummaryProvider
     }
 
     func hydrateFromDisk() async {
@@ -92,6 +99,7 @@ final class CommunityFeedViewModel {
             favoritesRows = visibleRows(cached.favorites)
             everyoneRows = visibleRows(cached.everyone)
             nextCursor = cached.nextCursor
+            refreshReviewContextSummaries()
             if !cached.favorites.isEmpty || !cached.everyone.isEmpty {
                 state = .loaded
             }
@@ -117,10 +125,12 @@ final class CommunityFeedViewModel {
             favoritesRows = visibleRows(cached.favorites)
             everyoneRows = visibleRows(cached.everyone)
             nextCursor = cached.nextCursor
+            refreshReviewContextSummaries()
         } else {
             favoritesRows = []
             everyoneRows = []
             nextCursor = nil
+            refreshReviewContextSummaries()
         }
     }
 
@@ -151,14 +161,14 @@ final class CommunityFeedViewModel {
             case .all:
                 let favoritePage = try await loadPage(
                     cursor: nil,
-                    limit: 20,
+                    limit: pageSize,
                     authorIDsToInclude: favoriteIDs.isEmpty ? [] : favoriteIDs,
                     authorIDsToExclude: excludeSelf,
                     label: "favorites"
                 )
                 let everyonePage = try await loadPage(
                     cursor: nil,
-                    limit: 50,
+                    limit: pageSize,
                     authorIDsToInclude: nil,
                     authorIDsToExclude: excludeSelf,
                     label: "everyone"
@@ -182,7 +192,7 @@ final class CommunityFeedViewModel {
             case .mine:
                 let minePage = try await loadPage(
                     cursor: nil,
-                    limit: 50,
+                    limit: pageSize,
                     authorIDsToInclude: [currentMember.userRecordID],
                     authorIDsToExclude: [],
                     label: "mine"
@@ -194,6 +204,7 @@ final class CommunityFeedViewModel {
                 await persistCacheToDisk()
             }
             state = .loaded
+            refreshReviewContextSummaries()
             await hydrateLikedStateForVisibleRows()
         } catch {
             if shouldShowFullScreenLoading {
@@ -206,17 +217,24 @@ final class CommunityFeedViewModel {
 
     func loadNextPage() async {
         guard let nextCursor else { return }
+        guard !isLoadingNextPage else { return }
+        isLoadingNextPage = true
+        defer { isLoadingNextPage = false }
         do {
             let include: Set<String>? = filter == .mine ? currentMember.map { Set([$0.userRecordID]) } : nil
             let exclude: Set<String> = filter == .mine ? [] : currentMember.map { Set([$0.userRecordID]) } ?? []
             let page = try await service.fetchFeedPage(
                 cursor: nextCursor,
-                limit: 50,
+                limit: pageSize,
                 authorIDsToInclude: include,
                 authorIDsToExclude: exclude
             )
             everyoneRows.append(contentsOf: visibleRows(sorted(page.rows)))
             self.nextCursor = page.nextCursor
+            cache[filter] = CachedFeed(favorites: favoritesRows, everyone: everyoneRows, nextCursor: self.nextCursor)
+            await persistCacheToDisk()
+            refreshReviewContextSummaries()
+            await hydrateLikedStateForVisibleRows()
         } catch {
             state = .failed("Road Beans could not load more community visits.")
         }
@@ -228,6 +246,10 @@ final class CommunityFeedViewModel {
 
     func isLiked(_ row: CommunityVisitRow) -> Bool {
         likedVisitIDs.contains(row.id)
+    }
+
+    func reviewContextSummary(for row: CommunityVisitRow) -> String? {
+        reviewContextSummaries[row.id]
     }
 
     func toggleLike(_ row: CommunityVisitRow) async {
@@ -338,6 +360,41 @@ final class CommunityFeedViewModel {
                     row.drinkSummary,
                     row.tagSummary
                 ])
+        }
+    }
+
+    private func refreshReviewContextSummaries() {
+        let rows = favoritesRows + everyoneRows
+        let visibleIDs = Set(rows.map(\.id))
+        reviewContextSummaries = reviewContextSummaries.filter { visibleIDs.contains($0.key) }
+        contextSynthesisRequestedIDs = contextSynthesisRequestedIDs.filter { visibleIDs.contains($0) }
+        var rowsNeedingSynthesis: [CommunityVisitRow] = []
+
+        for row in rows {
+            guard CommunityReviewContextSummary.facts(for: row).hasContext else { continue }
+            if !contextSynthesisRequestedIDs.contains(row.id) {
+                contextSynthesisRequestedIDs.insert(row.id)
+                rowsNeedingSynthesis.append(row)
+            }
+        }
+
+        guard !rowsNeedingSynthesis.isEmpty else { return }
+        Task { [contextSummaryProvider] in
+            var synthesized: [String: String] = [:]
+            for row in rowsNeedingSynthesis {
+                synthesized[row.id] = await contextSummaryProvider.synthesizedSummary(for: row)
+                    ?? CommunityReviewContextSummary.fallbackSummary(for: row)
+                    ?? ""
+            }
+            guard !synthesized.isEmpty else { return }
+            await MainActor.run {
+                let activeIDs = Set((favoritesRows + everyoneRows).map(\.id))
+                for (id, summary) in synthesized where activeIDs.contains(id) {
+                    guard !summary.isEmpty else { continue }
+                    guard reviewContextSummaries[id] != summary else { continue }
+                    reviewContextSummaries[id] = summary
+                }
+            }
         }
     }
 
