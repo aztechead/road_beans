@@ -122,16 +122,7 @@ private struct CommunityReviewContextBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
-            if let summary, !summary.isEmpty {
-                Text(summary)
-                    .roadBeansStyle(.bodyS)
-                    .foregroundStyle(.ink(.secondary))
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                GhostSummaryLines()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            ReviewSummaryArea(summary: summary)
 
             if !options.isEmpty {
                 chipGroup(title: "Reviewed", chips: options, systemImage: "cup.and.saucer.fill")
@@ -167,6 +158,33 @@ private struct CommunityReviewContextBlock: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct ReviewSummaryArea: View {
+    let summary: String?
+
+    private var hasSummary: Bool {
+        !(summary?.isEmpty ?? true)
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            GhostSummaryLines()
+                .opacity(hasSummary ? 0 : 1)
+
+            if let summary, !summary.isEmpty {
+                Text(summary)
+                    .roadBeansStyle(.bodyS)
+                    .foregroundStyle(.ink(.secondary))
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
+        .clipped()
+        .animation(nil, value: summary ?? "")
+        .accessibilityLabel(hasSummary ? (summary ?? "") : "Summarizing review")
     }
 }
 
