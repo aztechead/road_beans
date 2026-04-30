@@ -94,39 +94,23 @@ struct MapTabView: View {
         @Bindable var viewModel = viewModel
 
         return VStack(spacing: 0) {
-            Toggle("Stops near me", isOn: $viewModel.nearMeOn)
-                .padding()
-                .onChange(of: viewModel.nearMeOn) { _, isOn in
-                    Task {
-                        if isOn {
-                            await viewModel.requestPermissionIfNeeded()
-                        }
-                        await viewModel.reload(allowingNearMe: isOn)
-                    }
+            MapLayerControlPanel(
+                nearMeOn: viewModel.nearMeOn,
+                communityReviewsOn: viewModel.communityReviewsOn,
+                isCommunityMember: viewModel.isCommunityMember,
+                isLoadingCommunity: viewModel.communityLoadState == .loading,
+                personalCount: viewModel.places.count,
+                communityCount: viewModel.communityAnnotations.reduce(0) { $0 + $1.reviewCount },
+                onToggleNearMe: {
+                    viewModel.nearMeOn.toggle()
+                },
+                onToggleCommunity: {
+                    viewModel.communityReviewsOn.toggle()
                 }
-
-            if viewModel.isCommunityMember {
-                if viewModel.communityLoadState == .loading {
-                    HStack {
-                        Text("Community reviews")
-                        Spacer()
-                        ProgressView()
-                    }
-                    .padding()
-                } else {
-                    Toggle("Community reviews", isOn: $viewModel.communityReviewsOn)
-                        .padding()
-                        .onChange(of: viewModel.communityReviewsOn) { _, isOn in
-                            Task {
-                                await viewModel.reloadCommunityAnnotations(enabled: isOn)
-                                guard isOn, viewModel.communityReviewsOn else { return }
-                                await MainActor.run {
-                                    fitCommunityContent(viewModel)
-                                }
-                            }
-                        }
-                }
-            }
+            )
+            .padding(.horizontal, RoadBeansSpacing.md)
+            .padding(.top, RoadBeansSpacing.sm)
+            .padding(.bottom, RoadBeansSpacing.xs)
 
             if viewModel.isLoadingCurrentLocation {
                 loadingLocationState
@@ -189,9 +173,29 @@ struct MapTabView: View {
                         )
                     )
                 }
+                .clipShape(RoundedRectangle(cornerRadius: RoadBeansRadius.lg, style: .continuous))
+                .padding(.horizontal, RoadBeansSpacing.md)
+                .padding(.bottom, RoadBeansSpacing.md)
             }
         }
         .background(Color.surface(.canvas).ignoresSafeArea())
+        .onChange(of: viewModel.nearMeOn) { _, isOn in
+            Task {
+                if isOn {
+                    await viewModel.requestPermissionIfNeeded()
+                }
+                await viewModel.reload(allowingNearMe: isOn)
+            }
+        }
+        .onChange(of: viewModel.communityReviewsOn) { _, isOn in
+            Task {
+                await viewModel.reloadCommunityAnnotations(enabled: isOn)
+                guard isOn, viewModel.communityReviewsOn else { return }
+                await MainActor.run {
+                    fitCommunityContent(viewModel)
+                }
+            }
+        }
         .sheet(item: $selectedMapItem) { item in
             switch item {
             case .personal(let place):
@@ -278,6 +282,20 @@ struct MapTabView: View {
                     }
 
                     Spacer(minLength: RoadBeansSpacing.md)
+
+                    if let coordinate = place.coordinate {
+                        Button {
+                            openRouteInMaps(name: place.name, coordinate: coordinate)
+                        } label: {
+                            Image(systemName: "map.fill")
+                                .font(.headline)
+                                .frame(width: 44, height: 44)
+                                .background(Color.accent(.default), in: Circle())
+                                .foregroundStyle(Color.accent(.on))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Route to \(place.name)")
+                    }
                 }
 
                 if let averageRating = place.averageRating {
@@ -295,7 +313,7 @@ struct MapTabView: View {
                 }
 
                 NavigationLink(value: place.id) {
-                    Label("View Visits", systemImage: "chevron.right.circle.fill")
+                    Label("View all \(place.visitCount) review\(place.visitCount == 1 ? "" : "s")", systemImage: "text.bubble.fill")
                         .roadBeansStyle(.label)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: 44)
@@ -316,53 +334,93 @@ struct MapTabView: View {
 
     private func communityPlaceSheet(_ annotation: CommunityPlaceAnnotation) -> some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
-                HStack(alignment: .top, spacing: RoadBeansSpacing.md) {
-                    ZStack {
-                        TopoShape(seed: TopoSeeds.emptyState, ringCount: 4, amplitude: 0.12, frequency: 4)
-                            .stroke(annotation.kind.accentColor.opacity(0.22), lineWidth: 1)
-                            .frame(width: 72, height: 72)
+            ScrollView {
+                VStack(alignment: .leading, spacing: RoadBeansSpacing.lg) {
+                    HStack(alignment: .top, spacing: RoadBeansSpacing.md) {
+                        ZStack {
+                            TopoShape(seed: TopoSeeds.emptyState, ringCount: 4, amplitude: 0.12, frequency: 4)
+                                .stroke(annotation.kind.accentColor.opacity(0.22), lineWidth: 1)
+                                .frame(width: 72, height: 72)
 
-                        PlaceKindIcon(kind: annotation.kind)
-                            .stroke(
-                                annotation.kind.accentColor,
-                                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
-                            )
-                            .frame(width: 30, height: 30)
+                            PlaceKindIcon(kind: annotation.kind)
+                                .stroke(
+                                    annotation.kind.accentColor,
+                                    style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                                )
+                                .frame(width: 30, height: 30)
+                        }
+
+                        VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
+                            Text(annotation.name)
+                                .roadBeansStyle(.titleL)
+                                .foregroundStyle(.ink(.primary))
+                                .lineLimit(2)
+
+                            RoadBeansChip(title: annotation.kind.displayName, state: .default)
+                        }
+
+                        Spacer(minLength: RoadBeansSpacing.md)
+
+                        Button {
+                            openRouteInMaps(name: annotation.name, coordinate: annotation.coordinate)
+                        } label: {
+                            Image(systemName: "map.fill")
+                                .font(.headline)
+                                .frame(width: 44, height: 44)
+                                .background(Color.accent(.default), in: Circle())
+                                .foregroundStyle(Color.accent(.on))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Route to \(annotation.name)")
                     }
 
-                    VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
-                        Text(annotation.name)
-                            .roadBeansStyle(.titleL)
-                            .foregroundStyle(.ink(.primary))
-                            .lineLimit(2)
+                    HStack {
+                        Text("Community rating")
+                            .roadBeansStyle(.labelM)
+                            .foregroundStyle(.ink(.secondary))
 
-                        RoadBeansChip(title: annotation.kind.displayName, state: .default)
+                        Spacer()
+
+                        BeanRatingView(value: .constant(annotation.averageRating), size: 18, editable: false)
                     }
+                    .padding(RoadBeansSpacing.md)
+                    .surface(.sunken, radius: RoadBeansRadius.md)
 
-                    Spacer(minLength: RoadBeansSpacing.md)
+                    VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
+                        Text("\(annotation.reviewCount) community review\(annotation.reviewCount == 1 ? "" : "s")")
+                            .roadBeansStyle(.caption)
+                            .foregroundStyle(.ink(.secondary))
+
+                        ForEach(annotation.reviews) { review in
+                            NavigationLink(value: review.id) {
+                                CommunityMapReviewRow(review: review)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
-
-                HStack {
-                    Text("Community rating")
-                        .roadBeansStyle(.labelM)
-                        .foregroundStyle(.ink(.secondary))
-
-                    Spacer()
-
-                    BeanRatingView(value: .constant(annotation.averageRating), size: 18, editable: false)
-                }
-                .padding(RoadBeansSpacing.md)
-                .surface(.sunken, radius: RoadBeansRadius.md)
-
-                Text("\(annotation.reviewCount) community review\(annotation.reviewCount == 1 ? "" : "s")")
-                    .roadBeansStyle(.caption)
-                    .foregroundStyle(.ink(.secondary))
+                .padding(RoadBeansSpacing.lg)
+                .roadBeansSurface(.base, tint: annotation.kind.accentColor)
             }
-            .padding(RoadBeansSpacing.lg)
-            .roadBeansSurface(.base, tint: annotation.kind.accentColor)
             .padding()
+            .navigationDestination(for: String.self) { recordName in
+                CommunityVisitDetailView(recordName: recordName)
+            }
             .presentationDetents([.medium])
+        }
+    }
+
+    private func openRouteInMaps(name: String, coordinate: CLLocationCoordinate2D) {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "maps.apple.com"
+        components.queryItems = [
+            URLQueryItem(name: "daddr", value: "\(coordinate.latitude),\(coordinate.longitude)"),
+            URLQueryItem(name: "q", value: name)
+        ]
+
+        if let url = components.url {
+            UIApplication.shared.open(url)
         }
     }
 
@@ -406,6 +464,170 @@ struct MapTabView: View {
                 )
             )
         )
+    }
+}
+
+private struct MapLayerControlPanel: View {
+    let nearMeOn: Bool
+    let communityReviewsOn: Bool
+    let isCommunityMember: Bool
+    let isLoadingCommunity: Bool
+    let personalCount: Int
+    let communityCount: Int
+    let onToggleNearMe: () -> Void
+    let onToggleCommunity: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Map lens")
+                        .roadBeansStyle(.caption)
+                        .foregroundStyle(.ink(.tertiary))
+
+                    Text(activeSummary)
+                        .roadBeansStyle(.headline)
+                        .foregroundStyle(.ink(.primary))
+                }
+
+                Spacer()
+
+                Image(systemName: "scope")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Color.accent(.default))
+            }
+
+            HStack(spacing: RoadBeansSpacing.sm) {
+                MapLayerButton(
+                    title: "Near me",
+                    subtitle: "\(personalCount) stop\(personalCount == 1 ? "" : "s")",
+                    systemImage: "location.fill",
+                    isSelected: nearMeOn,
+                    isLoading: false,
+                    action: onToggleNearMe
+                )
+
+                if isCommunityMember {
+                    MapLayerButton(
+                        title: "Community",
+                        subtitle: "\(communityCount) review\(communityCount == 1 ? "" : "s")",
+                        systemImage: "person.2.fill",
+                        isSelected: communityReviewsOn,
+                        isLoading: isLoadingCommunity,
+                        action: onToggleCommunity
+                    )
+                }
+            }
+        }
+        .padding(RoadBeansSpacing.md)
+        .roadBeansSurface(.elevated, tint: Color.accent(.default))
+    }
+
+    private var activeSummary: String {
+        switch (nearMeOn, communityReviewsOn && isCommunityMember) {
+        case (true, true):
+            "Nearby stops plus trusted reviews"
+        case (true, false):
+            "Stops around your current route"
+        case (false, true):
+            "Community-tested places"
+        case (false, false):
+            "Your saved Road Beans stops"
+        }
+    }
+}
+
+private struct MapLayerButton: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let isSelected: Bool
+    let isLoading: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: RoadBeansSpacing.sm) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? Color.accent(.default) : Color.surface(.sunken))
+                        .frame(width: 34, height: 34)
+
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.mini)
+                    } else {
+                        Image(systemName: systemImage)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(isSelected ? Color.accent(.on) : Color.ink(.secondary))
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .roadBeansStyle(.labelM)
+                        .foregroundStyle(.ink(.primary))
+
+                    Text(subtitle)
+                        .roadBeansStyle(.caption)
+                        .foregroundStyle(.ink(.secondary))
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(RoadBeansSpacing.sm)
+            .frame(maxWidth: .infinity)
+            .background(
+                isSelected ? Color.accent(.default).opacity(0.12) : Color.surface(.sunken),
+                in: RoundedRectangle(cornerRadius: RoadBeansRadius.md, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: RoadBeansRadius.md, style: .continuous)
+                    .stroke(isSelected ? Color.accent(.default).opacity(0.45) : Color.divider(.hairline), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
+private struct CommunityMapReviewRow: View {
+    let review: CommunityVisitRow
+
+    var body: some View {
+        HStack(alignment: .top, spacing: RoadBeansSpacing.sm) {
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
+                HStack {
+                    Text(review.authorDisplayName)
+                        .roadBeansStyle(.labelM)
+                        .foregroundStyle(.ink(.primary))
+
+                    Spacer()
+
+                    BeanRatingView(value: .constant(review.beanRating), size: 14, editable: false)
+                }
+
+                Text(review.drinkSummary.isEmpty ? "Community visit" : review.drinkSummary)
+                    .roadBeansStyle(.bodyS)
+                    .foregroundStyle(.ink(.secondary))
+                    .lineLimit(2)
+
+                if !review.tagSummary.isEmpty {
+                    Text(review.tagSummary)
+                        .roadBeansStyle(.caption)
+                        .foregroundStyle(.ink(.tertiary))
+                        .lineLimit(1)
+                }
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.ink(.tertiary))
+                .padding(.top, 4)
+        }
+        .padding(RoadBeansSpacing.md)
+        .surface(.sunken, radius: RoadBeansRadius.md)
+        .accessibilityElement(children: .combine)
     }
 }
 
