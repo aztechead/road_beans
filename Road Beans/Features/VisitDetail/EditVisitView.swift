@@ -150,7 +150,7 @@ struct EditVisitView: View {
                 .padding(RoadBeansSpacing.md)
                 .surface(.sunken, radius: RoadBeansRadius.md)
 
-            EditVisitDrinkCategoryChips(selection: $drinks[index].category)
+            DrinkProgressiveChips(drink: $drinks[index])
 
             RoadBeansClearableTextField(
                 "Tags",
@@ -197,13 +197,21 @@ struct EditVisitView: View {
 
     private var newPhotoStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(Array(newPhotos.enumerated()), id: \.offset) { index, draft in
-                    PhotoThumbnail(data: draft.previewImageData ?? draft.rawImageData) {
-                        newPhotos.remove(at: index)
-                        if index < pickerItems.count {
-                            pickerItems.remove(at: index)
+            HStack(alignment: .top, spacing: 10) {
+                ForEach(newPhotos.indices, id: \.self) { index in
+                    VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
+                        PhotoThumbnail(data: newPhotos[index].previewImageData ?? newPhotos[index].rawImageData) {
+                            newPhotos.remove(at: index)
+                            if index < pickerItems.count {
+                                pickerItems.remove(at: index)
+                            }
                         }
+
+                        PhotoCaptionEditor(
+                            title: "Photo \(index + 1) note",
+                            caption: $newPhotos[index].caption
+                        )
+                        .frame(width: 210)
                     }
                 }
             }
@@ -248,39 +256,6 @@ struct EditVisitView: View {
             }
         }
         newPhotos = drafts
-    }
-}
-
-private struct EditVisitDrinkCategoryChips: View {
-    @Binding var selection: DrinkCategory
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: RoadBeansSpacing.sm) {
-                ForEach(DrinkCategory.allCases, id: \.self) { category in
-                    Button {
-                        selection = category
-                    } label: {
-                        HStack(spacing: RoadBeansSpacing.xs) {
-                            Icon(.drink(category), size: 16, active: selection == category)
-                            Text(category.displayName)
-                        }
-                        .roadBeansStyle(.labelM)
-                        .padding(.horizontal, RoadBeansSpacing.md)
-                        .padding(.vertical, 6)
-                        .background(selection == category ? Color.accent(.default) : Color.clear, in: Capsule())
-                        .foregroundStyle(selection == category ? Color.accent(.on) : Color.ink(.secondary))
-                        .overlay {
-                            if selection != category {
-                                Capsule().stroke(Color.divider(.strong), lineWidth: 1)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selection == category ? [.isSelected] : [])
-                }
-            }
-        }
     }
 }
 

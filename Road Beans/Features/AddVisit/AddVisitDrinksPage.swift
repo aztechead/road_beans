@@ -55,7 +55,7 @@ private struct DrinkDraftRow: View {
                 }
             }
 
-            DrinkCategoryChips(selection: $drink.category)
+            DrinkProgressiveChips(drink: $drink)
 
             RoadBeansClearableTextField("Drink name", text: $drink.name)
                 .padding(RoadBeansSpacing.md)
@@ -71,38 +71,5 @@ private struct DrinkDraftRow: View {
         }
         .padding(RoadBeansSpacing.lg)
         .roadBeansSurface(.base, tint: Color.accent(.default))
-    }
-}
-
-private struct DrinkCategoryChips: View {
-    @Binding var selection: DrinkCategory
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: RoadBeansSpacing.sm) {
-                ForEach(DrinkCategory.allCases, id: \.self) { category in
-                    Button {
-                        selection = category
-                    } label: {
-                        HStack(spacing: RoadBeansSpacing.xs) {
-                            Icon(.drink(category), size: 16, active: selection == category)
-                            Text(category.displayName)
-                        }
-                        .roadBeansStyle(.labelM)
-                        .padding(.horizontal, RoadBeansSpacing.md)
-                        .padding(.vertical, 6)
-                        .background(selection == category ? Color.accent(.default) : Color.clear, in: Capsule())
-                        .foregroundStyle(selection == category ? Color.accent(.on) : Color.ink(.secondary))
-                        .overlay {
-                            if selection != category {
-                                Capsule().stroke(Color.divider(.strong), lineWidth: 1)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selection == category ? [.isSelected] : [])
-                }
-            }
-        }
     }
 }

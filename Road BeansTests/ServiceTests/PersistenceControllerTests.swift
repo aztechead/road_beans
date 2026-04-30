@@ -34,9 +34,8 @@ struct PersistenceControllerTests {
 
         try? await Task.sleep(nanoseconds: 50_000_000)
         icloud.triggerIdentityChange()
-        try? await Task.sleep(nanoseconds: 100_000_000)
 
-        #expect(controller.mode == .cloudKitBacked)
+        await expect(controller, eventually: .cloudKitBacked)
     }
 
     @Test func changedCloudKitIdentityTriggersPendingRelaunch() async {
@@ -50,9 +49,8 @@ struct PersistenceControllerTests {
         try? await Task.sleep(nanoseconds: 50_000_000)
         icloud.token = "user2"
         icloud.triggerIdentityChange()
-        try? await Task.sleep(nanoseconds: 100_000_000)
 
-        #expect(controller.mode == .pendingRelaunch)
+        await expect(controller, eventually: .pendingRelaunch)
     }
 
     @Test func signingOutSwitchesToICloudUnavailable() async {
@@ -66,9 +64,8 @@ struct PersistenceControllerTests {
         try? await Task.sleep(nanoseconds: 50_000_000)
         icloud.token = nil
         icloud.triggerIdentityChange()
-        try? await Task.sleep(nanoseconds: 100_000_000)
 
-        #expect(controller.mode == .iCloudUnavailable)
+        await expect(controller, eventually: .iCloudUnavailable)
     }
 
     @Test func signingInFromUnavailableSwitchesToCloudKitBacked() async {
@@ -82,8 +79,22 @@ struct PersistenceControllerTests {
         try? await Task.sleep(nanoseconds: 50_000_000)
         icloud.token = "user1"
         icloud.triggerIdentityChange()
-        try? await Task.sleep(nanoseconds: 100_000_000)
 
-        #expect(controller.mode == .cloudKitBacked)
+        await expect(controller, eventually: .cloudKitBacked)
+    }
+
+    private func expect(
+        _ controller: PersistenceController,
+        eventually expectedMode: PersistenceMode,
+        timeoutNanoseconds: UInt64 = 1_000_000_000
+    ) async {
+        let deadline = ContinuousClock.now + .nanoseconds(Int64(timeoutNanoseconds))
+        while ContinuousClock.now < deadline {
+            if controller.mode == expectedMode {
+                break
+            }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        #expect(controller.mode == expectedMode)
     }
 }
