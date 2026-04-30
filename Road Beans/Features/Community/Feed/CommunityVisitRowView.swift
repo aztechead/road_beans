@@ -127,8 +127,10 @@ private struct CommunityReviewContextBlock: View {
                     .roadBeansStyle(.bodyS)
                     .foregroundStyle(.ink(.secondary))
                     .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 GhostSummaryLines()
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if !options.isEmpty {
@@ -139,6 +141,7 @@ private struct CommunityReviewContextBlock: View {
                 chipGroup(title: "Tags", chips: tags, systemImage: "tag.fill")
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(RoadBeansSpacing.md)
         .surface(.sunken, radius: RoadBeansRadius.md)
         .animation(nil, value: summary ?? "")
@@ -149,6 +152,7 @@ private struct CommunityReviewContextBlock: View {
             Label(title, systemImage: systemImage)
                 .roadBeansStyle(.caption)
                 .foregroundStyle(.ink(.tertiary))
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             FlowLayout(spacing: RoadBeansSpacing.xs, rowSpacing: RoadBeansSpacing.xs) {
                 ForEach(chips, id: \.self) { chip in
@@ -160,7 +164,9 @@ private struct CommunityReviewContextBlock: View {
                         .foregroundStyle(.ink(.secondary))
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -175,6 +181,7 @@ private struct GhostSummaryLines: View {
         .onAppear {
             isPulsing = true
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityLabel("Summarizing review")
     }
 
