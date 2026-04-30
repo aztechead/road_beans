@@ -83,7 +83,7 @@ struct CommunityFeedView: View {
 
             if !viewModel.favoritesRows.isEmpty {
                 Section("Favorites") {
-                    rows(viewModel.favoritesRows)
+                    rows(viewModel.favoritesRows, paginates: false)
                 }
             }
 
@@ -104,13 +104,18 @@ struct CommunityFeedView: View {
                         )
                     }
                 } else {
-                    rows(viewModel.everyoneRows)
+                    rows(viewModel.everyoneRows, paginates: true)
                 }
 
-                if viewModel.nextCursor != nil {
-                    Button("Load More") {
-                        Task { await viewModel.loadNextPage() }
+                if viewModel.isLoadingNextPage {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
                     }
+                    .padding(.vertical, RoadBeansSpacing.lg)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
             }
         }
@@ -155,7 +160,7 @@ struct CommunityFeedView: View {
         }
     }
 
-    private func rows(_ rows: [CommunityVisitRow]) -> some View {
+    private func rows(_ rows: [CommunityVisitRow], paginates: Bool) -> some View {
         ForEach(rows) { row in
             CommunityVisitRowView(
                 row: row,
@@ -166,6 +171,11 @@ struct CommunityFeedView: View {
                 selectedVisit = SelectedCommunityVisit(id: row.id)
             } onLikeTapped: {
                 Task { await viewModel.toggleLike(row) }
+            }
+            .onAppear {
+                guard paginates, row.id == rows.last?.id else { return }
+                guard viewModel.nextCursor != nil, !viewModel.isLoadingNextPage else { return }
+                Task { await viewModel.loadNextPage() }
             }
             .listRowSeparator(.hidden)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {

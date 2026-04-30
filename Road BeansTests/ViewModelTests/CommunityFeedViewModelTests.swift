@@ -124,6 +124,51 @@ struct CommunityFeedViewModelTests {
         #expect(summary == "Reviewed House Drip (Drip) and Road Latte (Latte) with smooth and roadtrip notes.")
     }
 
+    @Test func allFilterLoadsRecentCommunityRowsInTenItemPages() async throws {
+        let now = Date.now
+        let rows = (0..<12).map { index in
+            CommunityVisitRow(
+                id: "visit-\(index)",
+                authorUserRecordID: "other",
+                authorDisplayName: "Other",
+                authorTasteProfile: .midpoint,
+                placeName: "Cafe \(index)",
+                placeKindRawValue: PlaceKind.coffeeShop.rawValue,
+                placeMapKitIdentifier: nil,
+                placeLatitude: nil,
+                placeLongitude: nil,
+                visitDate: now.addingTimeInterval(Double(-index)),
+                beanRating: 4,
+                drinkSummary: "Drip",
+                tagSummary: "smooth",
+                publishedAt: now.addingTimeInterval(Double(-index)),
+                likeCount: 0,
+                commentCount: 0
+            )
+        }
+        let service = InMemoryCommunityService(
+            currentUserRecordID: "me",
+            members: [
+                CommunityMemberSnapshot(userRecordID: "me", displayName: "Me", tasteProfile: .midpoint, joinedAt: now),
+                CommunityMemberSnapshot(userRecordID: "other", displayName: "Other", tasteProfile: .midpoint, joinedAt: now)
+            ],
+            visits: rows
+        )
+        let viewModel = CommunityFeedViewModel(service: service, favorites: FakeFavoriteMemberRepository())
+
+        await viewModel.refresh()
+
+        #expect(viewModel.everyoneRows.count == 10)
+        #expect(viewModel.everyoneRows.first?.id == "visit-0")
+        #expect(viewModel.nextCursor != nil)
+
+        await viewModel.loadNextPage()
+
+        #expect(viewModel.everyoneRows.count == 12)
+        #expect(viewModel.everyoneRows.last?.id == "visit-11")
+        #expect(viewModel.nextCursor == nil)
+    }
+
     private func draft() -> CommunityVisitDraft {
         CommunityVisitDraft(
             localVisitID: UUID(),

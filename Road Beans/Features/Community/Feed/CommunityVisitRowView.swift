@@ -127,6 +127,8 @@ private struct CommunityReviewContextBlock: View {
                     .roadBeansStyle(.bodyS)
                     .foregroundStyle(.ink(.secondary))
                     .lineLimit(2)
+            } else {
+                GhostSummaryLines()
             }
 
             if !options.isEmpty {
@@ -139,9 +141,7 @@ private struct CommunityReviewContextBlock: View {
         }
         .padding(RoadBeansSpacing.md)
         .surface(.sunken, radius: RoadBeansRadius.md)
-        .transaction { transaction in
-            transaction.animation = nil
-        }
+        .animation(nil, value: summary ?? "")
     }
 
     private func chipGroup(title: String, chips: [String], systemImage: String) -> some View {
@@ -161,6 +161,34 @@ private struct CommunityReviewContextBlock: View {
                 }
             }
         }
+    }
+}
+
+private struct GhostSummaryLines: View {
+    @State private var isPulsing = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
+            ghostLine(widthFraction: 0.92)
+            ghostLine(widthFraction: 0.56)
+        }
+        .onAppear {
+            isPulsing = true
+        }
+        .accessibilityLabel("Summarizing review")
+    }
+
+    private func ghostLine(widthFraction: CGFloat) -> some View {
+        GeometryReader { proxy in
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(Color.ink(.tertiary).opacity(isPulsing ? 0.16 : 0.28))
+                .frame(width: proxy.size.width * widthFraction, height: 11)
+                .animation(
+                    .easeInOut(duration: 0.95).repeatForever(autoreverses: true),
+                    value: isPulsing
+                )
+        }
+        .frame(height: 11)
     }
 }
 
