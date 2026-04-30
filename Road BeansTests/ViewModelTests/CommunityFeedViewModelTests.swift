@@ -96,6 +96,34 @@ struct CommunityFeedViewModelTests {
         #expect(viewModel.everyoneRows.map(\.id) == ["liked"])
     }
 
+    @Test func reviewContextSummaryUsesReviewedOptionsAndTags() async throws {
+        let row = CommunityVisitRow(
+            id: "context",
+            authorUserRecordID: "other",
+            authorDisplayName: "Other",
+            authorTasteProfile: .midpoint,
+            placeName: "Cafe",
+            placeKindRawValue: PlaceKind.coffeeShop.rawValue,
+            placeMapKitIdentifier: nil,
+            placeLatitude: nil,
+            placeLongitude: nil,
+            visitDate: Date.now,
+            beanRating: 4,
+            drinkSummary: "House Drip (Drip), Road Latte (Latte)",
+            tagSummary: "smooth, roadtrip",
+            publishedAt: Date.now,
+            likeCount: 0,
+            commentCount: 0
+        )
+
+        let facts = CommunityReviewContextSummary.facts(for: row)
+        let summary = CommunityReviewContextSummary.fallbackSummary(for: row)
+
+        #expect(facts.options == ["House Drip (Drip)", "Road Latte (Latte)"])
+        #expect(facts.tags == ["smooth", "roadtrip"])
+        #expect(summary == "Reviewed House Drip (Drip) and Road Latte (Latte) with smooth and roadtrip notes.")
+    }
+
     private func draft() -> CommunityVisitDraft {
         CommunityVisitDraft(
             localVisitID: UUID(),

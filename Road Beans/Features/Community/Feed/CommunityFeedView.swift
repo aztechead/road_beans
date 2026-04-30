@@ -160,7 +160,8 @@ struct CommunityFeedView: View {
             CommunityVisitRowView(
                 row: row,
                 isFavorite: viewModel.isFavorite(row),
-                isLiked: viewModel.isLiked(row)
+                isLiked: viewModel.isLiked(row),
+                reviewContextSummary: viewModel.reviewContextSummary(for: row)
             ) {
                 selectedVisit = SelectedCommunityVisit(id: row.id)
             } onLikeTapped: {

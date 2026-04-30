@@ -4,11 +4,13 @@ struct CommunityVisitRowView: View {
     let row: CommunityVisitRow
     var isFavorite: Bool
     var isLiked = false
+    var reviewContextSummary: String?
     var onRowTapped: (() -> Void)?
     var onLikeTapped: (() -> Void)?
 
     var body: some View {
         let placeKind = PlaceKind(rawValue: row.placeKindRawValue) ?? .other
+        let contextFacts = CommunityReviewContextSummary.facts(for: row)
 
         VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
             VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
@@ -41,18 +43,12 @@ struct CommunityVisitRowView: View {
 
                 TasteProfileChips(profile: row.authorTasteProfile)
 
-                if !row.drinkSummary.isEmpty {
-                    Text(row.drinkSummary)
-                        .roadBeansStyle(.bodyS)
-                        .foregroundStyle(.ink(.secondary))
-                        .lineLimit(2)
-                }
-
-                if !row.tagSummary.isEmpty {
-                    Text(row.tagSummary)
-                        .roadBeansStyle(.caption)
-                        .foregroundStyle(.ink(.secondary))
-                        .lineLimit(2)
+                if contextFacts.hasContext {
+                    CommunityReviewContextBlock(
+                        summary: reviewContextSummary,
+                        options: contextFacts.options,
+                        tags: contextFacts.tags
+                    )
                 }
             }
             .contentShape(Rectangle())
@@ -116,5 +112,109 @@ struct CommunityVisitRowView: View {
             .foregroundStyle(isActive ? activeColor : Color.ink(.secondary))
             .frame(minWidth: 44, minHeight: 32, alignment: .leading)
             .contentShape(Rectangle())
+    }
+}
+
+private struct CommunityReviewContextBlock: View {
+    let summary: String?
+    let options: [String]
+    let tags: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
+            if let summary, !summary.isEmpty {
+                Text(summary)
+                    .roadBeansStyle(.bodyS)
+                    .foregroundStyle(.ink(.secondary))
+                    .lineLimit(2)
+            }
+
+            if !options.isEmpty {
+                chipGroup(title: "Reviewed", chips: options, systemImage: "cup.and.saucer.fill")
+            }
+
+            if !tags.isEmpty {
+                chipGroup(title: "Tags", chips: tags, systemImage: "tag.fill")
+            }
+        }
+        .padding(RoadBeansSpacing.md)
+        .surface(.sunken, radius: RoadBeansRadius.md)
+    }
+
+    private func chipGroup(title: String, chips: [String], systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
+            Label(title, systemImage: systemImage)
+                .roadBeansStyle(.caption)
+                .foregroundStyle(.ink(.tertiary))
+
+            FlowLayout(spacing: RoadBeansSpacing.xs, rowSpacing: RoadBeansSpacing.xs) {
+                ForEach(chips, id: \.self) { chip in
+                    Text(chip)
+                        .roadBeansStyle(.caption)
+                        .padding(.horizontal, RoadBeansSpacing.sm)
+                        .padding(.vertical, 5)
+                        .background(Color.surface(.raised), in: Capsule())
+                        .foregroundStyle(.ink(.secondary))
+                }
+            }
+        }
+    }
+}
+
+private struct FlowLayout: Layout {
+    var spacing: CGFloat
+    var rowSpacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout Void
+    ) -> CGSize {
+        layout(in: proposal.replacingUnspecifiedDimensions().width, subviews: subviews).size
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout Void
+    ) {
+        let rows = layout(in: bounds.width, subviews: subviews)
+        for item in rows.items {
+            subviews[item.index].place(
+                at: CGPoint(x: bounds.minX + item.origin.x, y: bounds.minY + item.origin.y),
+                proposal: ProposedViewSize(item.size)
+            )
+        }
+    }
+
+    private func layout(in width: CGFloat, subviews: Subviews) -> (items: [PositionedItem], size: CGSize) {
+        var items: [PositionedItem] = []
+        var origin = CGPoint.zero
+        var rowHeight: CGFloat = 0
+        var maxWidth: CGFloat = 0
+        let availableWidth = max(width, 1)
+
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            if origin.x > 0, origin.x + size.width > availableWidth {
+                origin.x = 0
+                origin.y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+
+            items.append(PositionedItem(index: index, origin: origin, size: size))
+            origin.x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            maxWidth = max(maxWidth, origin.x - spacing)
+        }
+
+        return (items, CGSize(width: min(maxWidth, availableWidth), height: origin.y + rowHeight))
+    }
+
+    private struct PositionedItem {
+        let index: Int
+        let origin: CGPoint
+        let size: CGSize
     }
 }

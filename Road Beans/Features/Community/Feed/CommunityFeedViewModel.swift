@@ -48,6 +48,7 @@ final class CommunityFeedViewModel {
     var likedVisitIDs: Set<String> = []
     var blockedAuthorIDs = CommunityModerationStore.blockedAuthorIDs
     var moderationMessage: String?
+    var reviewContextSummaries: [String: String] = [:]
 
     private struct CachedFeed {
         var favorites: [CommunityVisitRow]
@@ -61,18 +62,21 @@ final class CommunityFeedViewModel {
     private let memberCache: CommunityMemberCache?
     private let favorites: any FavoriteMemberRepository
     private let diskCache: CommunityFeedDiskCache
+    private let contextSummaryProvider: CommunityReviewContextSummaryProvider
     private let logger = Logger(subsystem: "brainmeld.Road-Beans", category: "CommunityFeed")
 
     init(
         service: any CommunityService,
         favorites: any FavoriteMemberRepository,
         memberCache: CommunityMemberCache? = nil,
-        diskCache: CommunityFeedDiskCache = CommunityFeedDiskCache()
+        diskCache: CommunityFeedDiskCache = CommunityFeedDiskCache(),
+        contextSummaryProvider: CommunityReviewContextSummaryProvider = CommunityReviewContextSummaryProvider()
     ) {
         self.service = service
         self.favorites = favorites
         self.memberCache = memberCache
         self.diskCache = diskCache
+        self.contextSummaryProvider = contextSummaryProvider
     }
 
     func hydrateFromDisk() async {
@@ -92,6 +96,7 @@ final class CommunityFeedViewModel {
             favoritesRows = visibleRows(cached.favorites)
             everyoneRows = visibleRows(cached.everyone)
             nextCursor = cached.nextCursor
+            refreshReviewContextSummaries()
             if !cached.favorites.isEmpty || !cached.everyone.isEmpty {
                 state = .loaded
             }
@@ -194,6 +199,7 @@ final class CommunityFeedViewModel {
                 await persistCacheToDisk()
             }
             state = .loaded
+            refreshReviewContextSummaries()
             await hydrateLikedStateForVisibleRows()
         } catch {
             if shouldShowFullScreenLoading {
@@ -217,6 +223,7 @@ final class CommunityFeedViewModel {
             )
             everyoneRows.append(contentsOf: visibleRows(sorted(page.rows)))
             self.nextCursor = page.nextCursor
+            refreshReviewContextSummaries()
         } catch {
             state = .failed("Road Beans could not load more community visits.")
         }
@@ -228,6 +235,10 @@ final class CommunityFeedViewModel {
 
     func isLiked(_ row: CommunityVisitRow) -> Bool {
         likedVisitIDs.contains(row.id)
+    }
+
+    func reviewContextSummary(for row: CommunityVisitRow) -> String? {
+        reviewContextSummaries[row.id] ?? CommunityReviewContextSummary.fallbackSummary(for: row)
     }
 
     func toggleLike(_ row: CommunityVisitRow) async {
@@ -338,6 +349,28 @@ final class CommunityFeedViewModel {
                     row.drinkSummary,
                     row.tagSummary
                 ])
+        }
+    }
+
+    private func refreshReviewContextSummaries() {
+        let rows = favoritesRows + everyoneRows
+        let visibleIDs = Set(rows.map(\.id))
+        reviewContextSummaries = reviewContextSummaries.filter { visibleIDs.contains($0.key) }
+
+        for row in rows {
+            guard let fallback = CommunityReviewContextSummary.fallbackSummary(for: row) else { continue }
+            reviewContextSummaries[row.id] = fallback
+        }
+
+        Task { [contextSummaryProvider] in
+            for row in rows {
+                guard let synthesized = await contextSummaryProvider.synthesizedSummary(for: row) else { continue }
+                await MainActor.run {
+                    guard favoritesRows.contains(where: { $0.id == row.id })
+                        || everyoneRows.contains(where: { $0.id == row.id }) else { return }
+                    reviewContextSummaries[row.id] = synthesized
+                }
+            }
         }
     }
 
