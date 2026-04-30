@@ -241,8 +241,8 @@ struct FoundationModelsRecommendationRankingService: RecommendationRankingServic
         switch SystemLanguageModel.default.availability {
         case .available:
             nil
-        case .unavailable(let reason):
-            "Apple Intelligence is unavailable: \(reason)"
+        case .unavailable:
+            nil
         }
     }
 

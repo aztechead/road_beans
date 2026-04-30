@@ -4,7 +4,8 @@ import SwiftUI
 
 struct RecommendationDeckView: View {
     @Bindable var viewModel: RecommendationDeckViewModel
-    @State private var showingAppleIntelligenceInfo = false
+    var onShowAppleIntelligenceInfo: () -> Void = {}
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isBrewingTasteProfile = false
     @AppStorage("recommendationsCollapsed") private var isCollapsed = true
 
@@ -33,47 +34,63 @@ struct RecommendationDeckView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAppleIntelligenceInfo) {
-            AppleIntelligenceInfoView(onReset: { await viewModel.reset() })
-        }
+        .animation(RoadBeansMotion.soft, value: isBrewingTasteProfile || viewModel.isEnabling)
     }
 
-    private var optInCard: some View {
-        RoadBeansCard(tint: .accent(.default)) {
-            VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
-                HStack {
-                    Label("Road Beans Radar", systemImage: "sparkles")
-                        .roadBeansStyle(.label)
-                        .foregroundStyle(.accent(.default))
-                    Spacer()
-                    appleIntelligenceInfoButton
-                }
+    @ViewBuilder private var optInCard: some View {
+        if isBrewingTasteProfile || viewModel.isEnabling {
+            BrewTasteProfileExperience(reduceMotion: reduceMotion)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.96, anchor: .center).combined(with: .opacity),
+                    removal: .scale(scale: 1.02, anchor: .center).combined(with: .opacity)
+                ))
+        } else {
+            RoadBeansCard(tint: .accent(.default)) {
+                VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
+                    HStack {
+                        Label("Road Beans Radar", systemImage: "sparkles")
+                            .roadBeansStyle(.label)
+                            .foregroundStyle(.accent(.default))
+                        Spacer()
+                        if AppleIntelligenceAvailability.isAvailable {
+                            appleIntelligenceInfoButton
+                        }
+                    }
 
-                Text("Find coffee and stops your way.")
-                    .roadBeansStyle(.titleL)
+                    Text("Find coffee and stops your way.")
+                        .roadBeansStyle(.titleL)
 
-                Text("Your saved visits stay on this device. Road Beans uses Apple Maps to find nearby public places, then ranks them on-device when Apple Intelligence is available.")
-                    .roadBeansStyle(.bodyS)
-                    .foregroundStyle(.ink(.secondary))
+                    Text("Your saved visits stay on this device. Road Beans uses Apple Maps to find nearby public places, then ranks them locally on this iPhone.")
+                        .roadBeansStyle(.bodyS)
+                        .foregroundStyle(.ink(.secondary))
 
-                optInDataGuide
+                    optInDataGuide
 
-                BrewTasteProfileButton(isBrewing: isBrewingTasteProfile || viewModel.isEnabling) {
-                    isBrewingTasteProfile = true
-                    Task {
-                        await viewModel.enable()
-                        try? await Task.sleep(for: .milliseconds(750))
-                        isBrewingTasteProfile = false
+                    BrewTasteProfileButton(isBrewing: false) {
+                        withAnimation(RoadBeansMotion.soft) {
+                            isBrewingTasteProfile = true
+                        }
+                        Task {
+                            await viewModel.enable()
+                            try? await Task.sleep(for: .milliseconds(750))
+                            withAnimation(RoadBeansMotion.soft) {
+                                isBrewingTasteProfile = false
+                            }
+                        }
+                    }
+
+                    if !viewModel.optInProgress.isComplete {
+                        Text("\(viewModel.optInProgress.ratedVisits) of \(viewModel.optInProgress.required) ratings logged. Tap to review what Radar still needs.")
+                            .roadBeansStyle(.caption)
+                            .foregroundStyle(.ink(.secondary))
                     }
                 }
-
-                if !viewModel.optInProgress.isComplete {
-                    Text("\(viewModel.optInProgress.ratedVisits) of \(viewModel.optInProgress.required) ratings logged. Tap to review what Radar still needs.")
-                        .roadBeansStyle(.caption)
-                        .foregroundStyle(.ink(.secondary))
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .transition(.asymmetric(
+                insertion: .scale(scale: 0.98, anchor: .center).combined(with: .opacity),
+                removal: .scale(scale: 0.94, anchor: .center).combined(with: .opacity)
+            ))
         }
     }
 
@@ -127,7 +144,7 @@ struct RecommendationDeckView: View {
 
     private var appleIntelligenceInfoButton: some View {
         Button {
-            showingAppleIntelligenceInfo = true
+            onShowAppleIntelligenceInfo()
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "sparkles")
@@ -175,7 +192,9 @@ struct RecommendationDeckView: View {
 
             if !isCollapsed {
                 HStack(spacing: RoadBeansSpacing.sm) {
-                    appleIntelligenceInfoButton
+                    if AppleIntelligenceAvailability.isAvailable {
+                        appleIntelligenceInfoButton
+                    }
                     Spacer()
                     if viewModel.isLoading {
                         ProgressView()
@@ -228,7 +247,9 @@ struct RecommendationDeckView: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: RoadBeansSpacing.sm)
-                    compactInfoButton
+                    if AppleIntelligenceAvailability.isAvailable {
+                        compactInfoButton
+                    }
                 }
                 Text(message)
                     .roadBeansStyle(.bodyS)
@@ -252,7 +273,9 @@ struct RecommendationDeckView: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: RoadBeansSpacing.sm)
-                    compactInfoButton
+                    if AppleIntelligenceAvailability.isAvailable {
+                        compactInfoButton
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -301,7 +324,7 @@ struct RecommendationDeckView: View {
 
     private var compactInfoButton: some View {
         Button {
-            showingAppleIntelligenceInfo = true
+            onShowAppleIntelligenceInfo()
         } label: {
             Image(systemName: "sparkles")
                 .font(.footnote.weight(.bold))
@@ -384,6 +407,175 @@ private struct BrewTasteProfileButton: View {
     }
 }
 
+private struct BrewTasteProfileExperience: View {
+    let reduceMotion: Bool
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let elapsed = timeline.date.timeIntervalSinceReferenceDate
+            let stage = BrewTasteProfileStage.current(at: elapsed)
+            let progress = BrewTasteProfileStage.progress(at: elapsed)
+
+            VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
+                HStack(alignment: .center, spacing: RoadBeansSpacing.md) {
+                    BrewProfileRoaster(progress: progress, reduceMotion: reduceMotion)
+                        .frame(width: 116, height: 88)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label(stage.title, systemImage: stage.symbolName)
+                            .roadBeansStyle(.titleM)
+                            .foregroundStyle(.ink(.primary))
+                            .contentTransition(.opacity)
+
+                        Text(stage.detail)
+                            .roadBeansStyle(.bodyS)
+                            .foregroundStyle(.ink(.secondary))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .contentTransition(.opacity)
+                    }
+                }
+
+                BrewProfileProgress(progress: progress)
+            }
+            .padding(RoadBeansSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(experienceFill, in: RoundedRectangle(cornerRadius: RoadBeansRadius.lg, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: RoadBeansRadius.lg, style: .continuous)
+                    .stroke(Color.accent(.default).opacity(0.28), lineWidth: 1)
+            }
+            .shadow(color: Color.accent(.default).opacity(0.14), radius: 18, x: 0, y: 10)
+            .compositingGroup()
+        }
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Brewing taste profile")
+    }
+
+    private var experienceFill: some ShapeStyle {
+        LinearGradient(
+            colors: [
+                Color.accent(.default).opacity(0.13),
+                Color.surface(.raised).opacity(0.96),
+                Color.state(.success).opacity(0.10)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+private struct BrewProfileRoaster: View {
+    let progress: Double
+    let reduceMotion: Bool
+
+    var body: some View {
+        ZStack {
+            TopoShape(seed: TopoSeeds.publishOverlay + 31, ringCount: 5, amplitude: 0.10, frequency: 4)
+                .stroke(Color.accent(.default).opacity(0.18), lineWidth: 1)
+                .rotationEffect(.degrees(reduceMotion ? 0 : progress * 18))
+
+            RoundedRectangle(cornerRadius: RoadBeansRadius.md, style: .continuous)
+                .fill(Color.surface(.raised).opacity(0.82))
+                .frame(width: 86, height: 48)
+                .overlay {
+                    RoundedRectangle(cornerRadius: RoadBeansRadius.md, style: .continuous)
+                        .stroke(Color.accent(.default).opacity(0.34), lineWidth: 1)
+                }
+
+            BrewCurve(progress: progress)
+                .stroke(Color.state(.success), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                .frame(width: 64, height: 30)
+                .offset(y: -2)
+
+            ForEach(0..<5, id: \.self) { index in
+                BeanMark(state: .full, size: index == 2 ? 13 : 10)
+                    .foregroundStyle(index == 2 ? Color.accent(.default) : Color.ink(.secondary))
+                    .rotationEffect(.degrees(beanAngle(index)))
+                    .offset(beanOffset(index))
+                    .opacity(index == 2 ? 1 : 0.55)
+            }
+        }
+    }
+
+    private func beanAngle(_ index: Int) -> Double {
+        reduceMotion ? Double(index * 22) : progress * 360 + Double(index * 37)
+    }
+
+    private func beanOffset(_ index: Int) -> CGSize {
+        guard !reduceMotion else {
+            return CGSize(width: CGFloat(index - 2) * 14, height: 25)
+        }
+
+        let phase = progress * Double.pi * 2 + Double(index) * 0.92
+        return CGSize(
+            width: CGFloat(cos(phase)) * CGFloat(34 - index * 2),
+            height: CGFloat(sin(phase * 1.2)) * 18 + 20
+        )
+    }
+}
+
+private struct BrewCurve: Shape {
+    let progress: Double
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let clamped = min(max(progress, 0), 1)
+        let endX = rect.minX + rect.width * CGFloat(0.18 + clamped * 0.76)
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.08, y: rect.maxY - 4))
+        path.addCurve(
+            to: CGPoint(x: endX, y: rect.minY + rect.height * CGFloat(0.22 + (1 - clamped) * 0.18)),
+            control1: CGPoint(x: rect.minX + rect.width * 0.28, y: rect.maxY + 2),
+            control2: CGPoint(x: rect.minX + rect.width * 0.56, y: rect.minY - 5)
+        )
+        return path
+    }
+}
+
+private struct BrewProfileProgress: View {
+    let progress: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.xs) {
+            HStack(spacing: RoadBeansSpacing.sm) {
+                ForEach(0..<3, id: \.self) { index in
+                    Capsule()
+                        .fill(fill(for: index))
+                        .frame(height: 7)
+                }
+            }
+
+            HStack(spacing: RoadBeansSpacing.sm) {
+                BrewStatusChip(title: "Visits", isActive: progress < 0.34)
+                BrewStatusChip(title: "Ratings", isActive: progress >= 0.34 && progress < 0.67)
+                BrewStatusChip(title: "Radar", isActive: progress >= 0.67)
+            }
+        }
+    }
+
+    private func fill(for index: Int) -> Color {
+        let threshold = Double(index) / 3
+        if progress >= threshold {
+            return index == 2 ? Color.state(.success) : Color.accent(.default)
+        }
+        return Color.surface(.sunken)
+    }
+}
+
+private struct BrewStatusChip: View {
+    let title: String
+    let isActive: Bool
+
+    var body: some View {
+        Text(title)
+            .roadBeansStyle(.caption)
+            .foregroundStyle(isActive ? Color.accent(.on) : Color.ink(.secondary))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(isActive ? Color.accent(.default) : Color.surface(.sunken), in: Capsule())
+    }
+}
+
 private struct BrewButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -428,7 +620,7 @@ private struct RecommendationCard: View {
     @State private var isSaving = false
 
     private static let cardWidth: CGFloat = 330
-    private static let cardHeight: CGFloat = 360
+    private static let cardHeight: CGFloat = 430
 
     var body: some View {
         VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
@@ -472,8 +664,8 @@ private struct RecommendationCard: View {
                     Text(reason)
                         .roadBeansStyle(.bodyS)
                         .foregroundStyle(.ink(.primary))
-                        .lineLimit(2)
-                        .truncationMode(.tail)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -493,8 +685,8 @@ private struct RecommendationCard: View {
                 Text(caution)
                     .roadBeansStyle(.caption)
                     .foregroundStyle(.ink(.secondary))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)

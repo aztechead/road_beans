@@ -28,13 +28,15 @@ struct PlaceListView: View {
             }
             .navigationTitle("Stops")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showingAppleIntelligenceInfo = true
-                    } label: {
-                        Label("How AI is used", systemImage: "sparkles")
+                if AppleIntelligenceAvailability.isAvailable {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showingAppleIntelligenceInfo = true
+                        } label: {
+                            Label("How AI is used", systemImage: "sparkles")
+                        }
+                        .accessibilityLabel("How Apple Intelligence is used")
                     }
-                    .accessibilityLabel("How Apple Intelligence is used")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -150,7 +152,12 @@ struct PlaceListView: View {
                     } else {
                         List {
                             if viewModel.mode == .byPlace, let recommendationViewModel {
-                                RecommendationDeckView(viewModel: recommendationViewModel)
+                                RecommendationDeckView(
+                                    viewModel: recommendationViewModel,
+                                    onShowAppleIntelligenceInfo: {
+                                        showingAppleIntelligenceInfo = true
+                                    }
+                                )
                                     .listRowSeparator(.hidden)
                                     .listRowBackground(Color.clear)
                                     .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 6, trailing: 16))

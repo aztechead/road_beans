@@ -1,8 +1,16 @@
 import SwiftUI
 
+enum AddVisitLaunchMode {
+    case standard
+    case quickLogHere
+}
+
 struct AddVisitView: View {
+    let launchMode: AddVisitLaunchMode
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.visitRepository) private var visits
+    @Environment(\.placeRepository) private var places
     @Environment(\.tagRepository) private var tags
     @Environment(\.locationSearchService) private var search
     @Environment(\.currentLocationProvider) private var currentLocationProvider
@@ -11,6 +19,11 @@ struct AddVisitView: View {
     @State private var model: AddVisitFlowModel?
     @State private var isSaving = false
     @State private var saveError: String?
+    @State private var didPrepareLaunchMode = false
+
+    init(launchMode: AddVisitLaunchMode = .standard) {
+        self.launchMode = launchMode
+    }
 
     var body: some View {
         NavigationStack {
@@ -75,12 +88,14 @@ struct AddVisitView: View {
             if model == nil {
                 model = AddVisitFlowModel(
                     visits: visits,
+                    places: places,
                     tags: tags,
                     search: search,
                     currentLocation: currentLocationProvider,
                     photoProcessor: photoProcessor
                 )
             }
+            await prepareLaunchModeIfNeeded()
         }
     }
 
@@ -98,11 +113,19 @@ struct AddVisitView: View {
     }
 
     private var navigationTitle: String {
+        if launchMode == .quickLogHere {
+            return "Quick Log"
+        }
+
         switch model?.currentPage ?? 0 {
-        case 0: "Place"
-        case 1: "Visit"
-        case 2: "Drinks"
-        default: "New Visit"
+        case 0:
+            return "Place"
+        case 1:
+            return "Visit"
+        case 2:
+            return "Drinks"
+        default:
+            return "New Visit"
         }
     }
 
@@ -139,6 +162,25 @@ struct AddVisitView: View {
             dismiss()
         } catch {
             saveError = "Could not save this visit."
+        }
+    }
+
+    private func prepareLaunchModeIfNeeded() async {
+        guard !didPrepareLaunchMode, let model else { return }
+        didPrepareLaunchMode = true
+
+        switch launchMode {
+        case .standard:
+            return
+        case .quickLogHere:
+            do {
+                try await model.prepareQuickLogHere()
+            } catch {
+                if model.drinks.isEmpty {
+                    model.drinks = [DrinkDraft(name: DrinkCategory.drip.displayName, category: .drip, rating: 3, tags: [])]
+                }
+                model.currentPage = 0
+            }
         }
     }
 }

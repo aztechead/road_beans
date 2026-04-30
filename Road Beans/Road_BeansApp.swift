@@ -113,7 +113,9 @@ struct Road_BeansApp: App {
         self.nearbyRecommendationCandidateService = AppleNativeRecommendationCandidateService(placeRepository: places)
         self.recommendationEnrichmentService = CommunityAwareRecommendationEnrichmentService(community: community)
         #if canImport(FoundationModels)
-        self.recommendationRankingService = FoundationModelsRecommendationRankingService()
+        self.recommendationRankingService = AppleIntelligenceAvailability.isAvailable
+            ? FoundationModelsRecommendationRankingService()
+            : HeuristicRecommendationRankingService()
         #else
         self.recommendationRankingService = HeuristicRecommendationRankingService()
         #endif

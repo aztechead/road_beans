@@ -8,6 +8,7 @@ struct AddVisitFlowModelPlaceTests {
     func makeModel() -> AddVisitFlowModel {
         AddVisitFlowModel(
             visits: FakeVisitRepository(),
+            places: FakePlaceRepository(),
             tags: FakeTagRepository(),
             search: FakeLocationSearchService(canned: []),
             currentLocation: FakeCurrentLocationProvider(coordinate: nil),
@@ -58,6 +59,7 @@ struct AddVisitFlowModelPlaceTests {
     @Test func searchFailureSetsFailedState() async throws {
         let model = AddVisitFlowModel(
             visits: FakeVisitRepository(),
+            places: FakePlaceRepository(),
             tags: FakeTagRepository(),
             search: FakeLocationSearchService(canned: [], error: FakeViewModelError.failed),
             currentLocation: FakeCurrentLocationProvider(coordinate: nil),
@@ -109,6 +111,7 @@ struct AddVisitFlowModelPlaceTests {
         let search = FakeLocationSearchService(canned: [far, nearby])
         let model = AddVisitFlowModel(
             visits: FakeVisitRepository(),
+            places: FakePlaceRepository(),
             tags: FakeTagRepository(),
             search: search,
             currentLocation: FakeCurrentLocationProvider(coordinate: CLLocationCoordinate2D(latitude: 33.4484, longitude: -112.0740)),

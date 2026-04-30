@@ -61,18 +61,28 @@ struct AddVisitVisitPage: View {
     }
 
     private var photoPreviewStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(Array(model.photos.enumerated()), id: \.offset) { index, draft in
-                    PhotoThumbnail(data: draft.previewImageData ?? draft.rawImageData) {
-                        model.photos.remove(at: index)
-                        if index < pickerItems.count {
-                            pickerItems.remove(at: index)
+        VStack(alignment: .leading, spacing: RoadBeansSpacing.md) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 10) {
+                    ForEach(model.photos.indices, id: \.self) { index in
+                        VStack(alignment: .leading, spacing: RoadBeansSpacing.sm) {
+                            PhotoThumbnail(data: model.photos[index].previewImageData ?? model.photos[index].rawImageData) {
+                                model.photos.remove(at: index)
+                                if index < pickerItems.count {
+                                    pickerItems.remove(at: index)
+                                }
+                            }
+
+                            PhotoCaptionEditor(
+                                title: "Photo \(index + 1) note",
+                                caption: $model.photos[index].caption
+                            )
+                            .frame(width: 210)
                         }
                     }
                 }
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
         }
     }
 

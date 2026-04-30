@@ -9,6 +9,7 @@ struct AddVisitSaveTests {
         let visits = FakeVisitRepository()
         let model = AddVisitFlowModel(
             visits: visits,
+            places: FakePlaceRepository(),
             tags: FakeTagRepository(),
             search: FakeLocationSearchService(canned: []),
             currentLocation: FakeCurrentLocationProvider(coordinate: nil),
