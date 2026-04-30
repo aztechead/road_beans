@@ -8,6 +8,7 @@ struct CommunityPlaceAnnotation: Identifiable, Sendable {
     let coordinate: CLLocationCoordinate2D
     let averageRating: Double
     let reviewCount: Int
+    let reviews: [CommunityVisitRow]
 
     static func group(from rows: [CommunityVisitRow]) -> [CommunityPlaceAnnotation] {
         var groups: [String: [CommunityVisitRow]] = [:]
@@ -28,7 +29,8 @@ struct CommunityPlaceAnnotation: Identifiable, Sendable {
                 kind: kind,
                 coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
                 averageRating: average,
-                reviewCount: rows.count
+                reviewCount: rows.count,
+                reviews: rows.sorted { $0.visitDate > $1.visitDate }
             )
         }
     }

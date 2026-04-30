@@ -161,7 +161,8 @@ struct MapTabViewModelTests {
                 kind: .truckStop,
                 coordinate: CLLocationCoordinate2D(latitude: 35.4364, longitude: -112.482),
                 averageRating: 4.2,
-                reviewCount: 1
+                reviewCount: 1,
+                reviews: []
             )
         ]
 
@@ -222,6 +223,7 @@ struct MapTabViewModelTests {
 
         #expect(viewModel.communityLoadState == .loaded)
         #expect(viewModel.communityAnnotations.map(\.id) == ["schema-mapkit-id"])
+        #expect(viewModel.communityAnnotations.first?.reviews.map(\.id) == ["other-review"])
     }
 
     @Test func communityAnnotationsIgnorePersonalNearMeFilter() async throws {
