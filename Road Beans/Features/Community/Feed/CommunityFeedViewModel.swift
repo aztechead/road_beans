@@ -58,6 +58,7 @@ final class CommunityFeedViewModel {
 
     private var cache: [CommunityFeedFilter: CachedFeed] = [:]
     private var hasHydrated = false
+    private var contextSynthesisRequestedIDs: Set<String> = []
     private let service: any CommunityService
     private let memberCache: CommunityMemberCache?
     private let favorites: any FavoriteMemberRepository
@@ -122,10 +123,12 @@ final class CommunityFeedViewModel {
             favoritesRows = visibleRows(cached.favorites)
             everyoneRows = visibleRows(cached.everyone)
             nextCursor = cached.nextCursor
+            refreshReviewContextSummaries()
         } else {
             favoritesRows = []
             everyoneRows = []
             nextCursor = nil
+            refreshReviewContextSummaries()
         }
     }
 
@@ -356,19 +359,35 @@ final class CommunityFeedViewModel {
         let rows = favoritesRows + everyoneRows
         let visibleIDs = Set(rows.map(\.id))
         reviewContextSummaries = reviewContextSummaries.filter { visibleIDs.contains($0.key) }
+        contextSynthesisRequestedIDs = contextSynthesisRequestedIDs.filter { visibleIDs.contains($0) }
+        var rowsNeedingSynthesis: [CommunityVisitRow] = []
 
         for row in rows {
-            guard let fallback = CommunityReviewContextSummary.fallbackSummary(for: row) else { continue }
-            reviewContextSummaries[row.id] = fallback
+            guard let fallback = CommunityReviewContextSummary.fallbackSummary(for: row) else {
+                continue
+            }
+            if reviewContextSummaries[row.id] == nil {
+                reviewContextSummaries[row.id] = fallback
+            }
+            if !contextSynthesisRequestedIDs.contains(row.id) {
+                contextSynthesisRequestedIDs.insert(row.id)
+                rowsNeedingSynthesis.append(row)
+            }
         }
 
+        guard !rowsNeedingSynthesis.isEmpty else { return }
         Task { [contextSummaryProvider] in
-            for row in rows {
-                guard let synthesized = await contextSummaryProvider.synthesizedSummary(for: row) else { continue }
-                await MainActor.run {
-                    guard favoritesRows.contains(where: { $0.id == row.id })
-                        || everyoneRows.contains(where: { $0.id == row.id }) else { return }
-                    reviewContextSummaries[row.id] = synthesized
+            var synthesized: [String: String] = [:]
+            for row in rowsNeedingSynthesis {
+                guard let summary = await contextSummaryProvider.synthesizedSummary(for: row) else { continue }
+                synthesized[row.id] = summary
+            }
+            guard !synthesized.isEmpty else { return }
+            await MainActor.run {
+                let activeIDs = Set((favoritesRows + everyoneRows).map(\.id))
+                for (id, summary) in synthesized where activeIDs.contains(id) {
+                    guard reviewContextSummaries[id] != summary else { continue }
+                    reviewContextSummaries[id] = summary
                 }
             }
         }

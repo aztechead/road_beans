@@ -139,6 +139,9 @@ private struct CommunityReviewContextBlock: View {
         }
         .padding(RoadBeansSpacing.md)
         .surface(.sunken, radius: RoadBeansRadius.md)
+        .transaction { transaction in
+            transaction.animation = nil
+        }
     }
 
     private func chipGroup(title: String, chips: [String], systemImage: String) -> some View {
