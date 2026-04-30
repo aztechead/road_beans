@@ -313,7 +313,7 @@ struct MapTabView: View {
                 }
 
                 NavigationLink(value: place.id) {
-                    Label("View all \(place.visitCount) review\(place.visitCount == 1 ? "" : "s")", systemImage: "text.bubble.fill")
+                    Label("View all Reviews", systemImage: "text.bubble.fill")
                         .roadBeansStyle(.label)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: 44)
